@@ -1,10 +1,14 @@
 // Taken from https://mmazzarolo.com/blog/2021-08-12-building-an-electron-application-using-create-react-app/
 
 // Module to control the application lifecycle and the native browser window.
-const { app, BrowserWindow, protocol } = require("electron");
+const { app, BrowserWindow, protocol, ipcMain } = require("electron");
 const path = require("path");
 const url = require("url");
+const fs = require("fs");
  
+const appPathData = app.getPath('appData');
+console.log(appPathData)
+
 // Create the native browser window.
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -13,7 +17,7 @@ function createWindow() {
     // Set the path of an additional "preload" script that can be used to
     // communicate between node-land and browser-land.
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, "preload.js")
     },
   });
  
@@ -91,3 +95,25 @@ app.on("web-contents-created", (event, contents) => {
  
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
+
+// -- Handle file write and file read events originating from a renderer process --
+
+ipcMain.handle('write', async (event, relpath, content) => {
+    try {
+        fs.writeFileSync(path.join(appPathData, relpath), content);
+        return { success: true };
+    } catch (err) {
+        console.error('Error writing file:', err);
+        return { success: false, error: err.message };
+    }
+});
+
+ipcMain.handle('read', async (event, relpath) => {
+    try {
+        const data = fs.readFileSync(path.join(appPathData, relpath), 'utf-8');
+        return { success: true, data };
+    } catch (err) {
+        console.error('Error reading file:', err);
+        return { success: false, error: err.message };
+    }
+});

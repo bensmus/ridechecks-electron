@@ -17,7 +17,8 @@ function App() {
         >
           Learn React
         </a>
-        <span>Electron version {String(window.oogabooga)}</span>
+        {/* Makes a place.txt file in /Users/bensmus/Library/Application Support */}
+        <input onChange={(e) => {window.file.write('place.txt', e.target.value)}}></input>
       </header>
     </div>
   );
