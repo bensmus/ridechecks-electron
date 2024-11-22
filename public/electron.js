@@ -6,8 +6,8 @@ const path = require("path");
 const url = require("url");
 const fs = require("fs");
  
-const appPathData = app.getPath('appData');
-console.log(appPathData)
+const userData = app.getPath('userData');
+console.log(userData)
 
 // Create the native browser window.
 function createWindow() {
@@ -98,9 +98,9 @@ app.on("web-contents-created", (event, contents) => {
 
 // -- Handle file write and file read events originating from a renderer process --
 
-ipcMain.handle('write', async (event, relpath, content) => {
+ipcMain.handle('appStateStore', async (event, content) => {
     try {
-        fs.writeFileSync(path.join(appPathData, relpath), content);
+        fs.writeFileSync(path.join(userData, 'state.json'), content);
         return { success: true };
     } catch (err) {
         console.error('Error writing file:', err);
@@ -108,9 +108,9 @@ ipcMain.handle('write', async (event, relpath, content) => {
     }
 });
 
-ipcMain.handle('read', async (event, relpath) => {
+ipcMain.handle('appStateLoad', async (event) => {
     try {
-        const data = fs.readFileSync(path.join(appPathData, relpath), 'utf-8');
+        const data = fs.readFileSync(path.join(userData, 'state.json'), 'utf-8');
         return { success: true, data };
     } catch (err) {
         console.error('Error reading file:', err);

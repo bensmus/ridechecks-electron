@@ -12,9 +12,9 @@ const { contextBridge, ipcRenderer } = require("electron");
 // They'll be accessible at "window.versions".
 process.once("loaded", () => {
     console.log('preload.js loaded')
-    contextBridge.exposeInMainWorld('file', {
-        // relpath is relative to app.getPath('appData')
-        write: (relpath, content) => ipcRenderer.invoke('write', relpath, content),
-        read: (relpath) => ipcRenderer.invoke('read', relpath),
+    contextBridge.exposeInMainWorld('appState', {
+        // relpath is relative to app.getPath('userData')
+        store: (state) => ipcRenderer.invoke('appStateStore', state),
+        load: () => ipcRenderer.invoke('appStateLoad'),
     })
 });

@@ -17,8 +17,7 @@ function App() {
         >
           Learn React
         </a>
-        {/* Makes a place.txt file in /Users/bensmus/Library/Application Support */}
-        <input onChange={(e) => {window.file.write('place.txt', e.target.value)}}></input>
+        <input onChange={(e) => {window.appState.store(e.target.value)}}></input>
       </header>
     </div>
   );
