@@ -17,6 +17,7 @@ function App() {
         >
           Learn React
         </a>
+        <span>Electron version {String(window.oogabooga)}</span>
       </header>
     </div>
   );
