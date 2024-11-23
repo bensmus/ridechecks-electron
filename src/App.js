@@ -3,7 +3,7 @@ import './App.css';
 import { useEffect, useState, useRef } from 'react';
 
 function App() {
-    const [appState, setAppState] = useState(null); // Dummy state.
+    const [appState, setAppState] = useState('dummy state'); // Dummy state.
 
     // Set up an object whose .current always tracks appState.
     const appStateRef = useRef(appState);

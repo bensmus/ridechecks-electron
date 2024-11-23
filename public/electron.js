@@ -110,7 +110,11 @@ ipcMain.handle('appStateStore', async (event, appState) => {
 
 ipcMain.handle('appStateLoad', async (event) => {
     try {
-        const appState = fs.readFileSync(path.join(userData, 'state.json'), 'utf-8');
+        const filePath = path.join(userData, 'state.json');
+        if (!fs.existsSync(filePath)) { // First time app is opened on computer.
+            fs.writeFileSync(filePath, 'default state', 'utf-8');
+        }
+        const appState = fs.readFileSync(filePath, 'utf-8');
         return { success: true, appState };
     } catch (err) {
         console.error('Error reading file:', err);
