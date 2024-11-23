@@ -18,6 +18,9 @@ function App() {
           Learn React
         </a>
         <input onChange={(e) => {window.appState.store(e.target.value)}}></input>
+        <button onClick={(e) => {window.ridechecksSave.ridechecksSave('1 + 1 == 2')}}>
+            A simple mathematical fact, saved to a location of your choosing
+        </button>
       </header>
     </div>
   );

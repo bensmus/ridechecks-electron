@@ -1,7 +1,7 @@
 // Taken from https://mmazzarolo.com/blog/2021-08-12-building-an-electron-application-using-create-react-app/
 
 // Module to control the application lifecycle and the native browser window.
-const { app, BrowserWindow, protocol, ipcMain } = require("electron");
+const { app, BrowserWindow, protocol, ipcMain, dialog } = require("electron");
 const path = require("path");
 const url = require("url");
 const fs = require("fs");
@@ -96,11 +96,11 @@ app.on("web-contents-created", (event, contents) => {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
 
-// -- Handle file write and file read events originating from a renderer process --
+// -- Handle file-related events originating from a renderer process --
 
-ipcMain.handle('appStateStore', async (event, content) => {
+ipcMain.handle('appStateStore', async (event, appState) => {
     try {
-        fs.writeFileSync(path.join(userData, 'state.json'), content);
+        fs.writeFileSync(path.join(userData, 'state.json'), appState);
         return { success: true };
     } catch (err) {
         console.error('Error writing file:', err);
@@ -110,10 +110,17 @@ ipcMain.handle('appStateStore', async (event, content) => {
 
 ipcMain.handle('appStateLoad', async (event) => {
     try {
-        const data = fs.readFileSync(path.join(userData, 'state.json'), 'utf-8');
-        return { success: true, data };
+        const appState = fs.readFileSync(path.join(userData, 'state.json'), 'utf-8');
+        return { success: true, appState };
     } catch (err) {
         console.error('Error reading file:', err);
         return { success: false, error: err.message };
     }
 });
+
+ipcMain.handle('ridechecksSave', async (event, ridechecks) => {
+    const {cancelled, filePath} = await dialog.showSaveDialog();
+    if (!cancelled) {
+        fs.writeFileSync(filePath, ridechecks);
+    }
+})

@@ -16,5 +16,8 @@ process.once("loaded", () => {
         // relpath is relative to app.getPath('userData')
         store: (state) => ipcRenderer.invoke('appStateStore', state),
         load: () => ipcRenderer.invoke('appStateLoad'),
+    });
+    contextBridge.exposeInMainWorld('ridechecksSave', {
+        ridechecksSave: (ridechecks) => ipcRenderer.invoke('ridechecksSave', ridechecks)
     })
 });
