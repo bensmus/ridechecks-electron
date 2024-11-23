@@ -11,8 +11,8 @@ function App() {
         appStateRef.current = appState;
     });
 
-    // Load state.
-    useEffect(() => { // useEffect is supposed to be run after the DOM is created and the render is commited, so after useState.
+    // https://stackoverflow.com/questions/66993812/usestate-vs-useeffect-setting-initial-value
+    useEffect(() => { // useEffect runs after first render.
         async function loadAppState() {
             const {success, appState} = await window.appState.load();
             if (!success) {
@@ -21,15 +21,14 @@ function App() {
             console.log(appState);
             setAppState(appState);
         }
-        // Load state.
-        loadAppState();
-    }, [])
 
-    // Setup listener for when electron app is about to close.
-    useEffect(() => {
+        loadAppState();
+
+        // Setup listener for when electron app is about to close.
         window.electronListener.beforeQuit(() => {
             window.appState.store(appStateRef.current);
         });
+
         // Cleanup listener.
         return () => {
             window.electronListener.beforeQuit(() => {});
