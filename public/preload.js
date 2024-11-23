@@ -20,4 +20,7 @@ process.once("loaded", () => {
     contextBridge.exposeInMainWorld('ridechecksSave', {
         ridechecksSave: (ridechecks) => ipcRenderer.invoke('ridechecksSave', ridechecks)
     })
+    contextBridge.exposeInMainWorld('electronListener', {
+        beforeQuit: (callback) => ipcRenderer.on('before-quit', callback)
+    })
 });

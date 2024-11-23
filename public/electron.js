@@ -7,11 +7,11 @@ const url = require("url");
 const fs = require("fs");
  
 const userData = app.getPath('userData');
-console.log(userData)
+let mainWindow;
 
 // Create the native browser window.
 function createWindow() {
-  const mainWindow = new BrowserWindow({
+   mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     // Set the path of an additional "preload" script that can be used to
@@ -123,4 +123,9 @@ ipcMain.handle('ridechecksSave', async (event, ridechecks) => {
     if (!cancelled) {
         fs.writeFileSync(filePath, ridechecks);
     }
+})
+
+// Let the App component know that electron is quitting
+app.on('before-quit', () => {
+    mainWindow.webContents.send('before-quit'); // 'before-quit' is the channel, ipcRenderer can listen 'on' that channel.
 })
