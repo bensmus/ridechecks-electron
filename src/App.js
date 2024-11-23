@@ -25,13 +25,14 @@ function App() {
         loadAppState();
 
         // Setup listener for when electron app is about to close.
-        window.electronListener.beforeQuit(() => {
-            window.appState.store(appStateRef.current);
+        window.electronListener.appStateSaveRequest(async () => {
+            await window.appState.store(appStateRef.current);
+            window.appState.isSaved();
         });
 
         // Cleanup listener.
         return () => {
-            window.electronListener.beforeQuit(() => {});
+            window.electronListener.appStateSaveRequest(() => {});
         }
     }, [])
 

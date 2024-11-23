@@ -7,11 +7,12 @@ const url = require("url");
 const fs = require("fs");
  
 const userData = app.getPath('userData');
+
 let mainWindow;
 
 // Create the native browser window.
 function createWindow() {
-   mainWindow = new BrowserWindow({
+    mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
     // Set the path of an additional "preload" script that can be used to
@@ -37,6 +38,11 @@ function createWindow() {
   if (!app.isPackaged) {
     mainWindow.webContents.openDevTools();
   }
+
+  mainWindow.on('close', (event) => {
+    event.preventDefault();
+    mainWindow.webContents.send('appStateSaveRequest');
+})
 }
  
 // Setup a local proxy to adjust the paths of requested files when loading
@@ -68,15 +74,6 @@ app.whenReady().then(() => {
       createWindow();
     }
   });
-});
- 
-// Quit when all windows are closed, except on macOS.
-// There, it's common for applications and their menu bar to stay active until
-// the user quits  explicitly with Cmd + Q.
-app.on("window-all-closed", function () {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
 });
  
 // If your app has no need to navigate or only needs to navigate to known pages,
@@ -129,7 +126,9 @@ ipcMain.handle('ridechecksSave', async (event, ridechecks) => {
     }
 })
 
-// Let the App component know that electron is quitting
-app.on('before-quit', () => {
-    mainWindow.webContents.send('before-quit'); // 'before-quit' is the channel, ipcRenderer can listen 'on' that channel.
-})
+// Listen for cleanup completion from renderer.
+// '.on' is used instead of '.handle' because we don't need the renderer to get a response.
+ipcMain.on('appStateSaved', () => {
+    mainWindow.destroy();
+    app.quit();
+});
