@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 
 function App() {
     const [appState, setAppState] = useState('dummy state'); // Dummy state.
+    const [apiResult, setApiResult] = useState('no composers'); // API not called yet.
 
     // Set up an object whose .current always tracks appState.
     const appStateRef = useRef(appState);
@@ -24,10 +25,11 @@ function App() {
 
         loadAppState();
 
-        // Setup listener for when electron app is about to close.
+        // Define callback for appStateSaveRequest, which is fired by the
+        // main process when the window 'X' button is hit.
         window.electronListener.appStateSaveRequest(async () => {
             await window.appState.store(appStateRef.current);
-            window.appState.isSaved();
+            window.appState.isSaved(); // Let main process know save was completed.
         });
 
         // Cleanup listener.
@@ -56,6 +58,21 @@ function App() {
         <button onClick={(e) => {window.ridechecksSave.ridechecksSave('1 + 1 == 2')}}>
             A simple mathematical fact, saved to a location of your choosing
         </button>
+        <p>apiResult: {apiResult}</p>
+        <button 
+            onClick={async () => {
+                setApiResult('fetching composers...');
+                const url = "https://api.openopus.org/composer/list/pop.json";
+                try {
+                    const response = await fetch(url);
+                    const json = await response.json();
+                    setApiResult(JSON.stringify(json));
+                }
+                catch (err) {
+                    setApiResult('Error fetching composers');
+                }
+            }}
+        >composerButton</button>
       </header>
     </div>
   );
