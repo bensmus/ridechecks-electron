@@ -66,6 +66,22 @@ function applyDayRestrict(appState, day) {
     return problemData;
 }
 
+// problemData is for one specific day, as is a ridecheck.
+async function fetchRidecheck(problemData) {
+    // Needed to set Access-Control-Allow-Origin to * in AWS console in order to make this work.
+    const url = "https://grhg6g6d90.execute-api.us-west-2.amazonaws.com/ridecheck_generator";
+    const options = {
+        'method': 'POST',
+        'headers': {
+            'Content-Type': 'application/json',
+        },
+        'body': JSON.stringify(problemData)
+    };
+    const response = await fetch(url, options);
+    const ridecheck = await response.json();
+    return ridecheck;
+}
+
 function App() {
     const [appState, setAppState] = useState('dummy state'); // Dummy state.
     const [apiResult, setApiResult] = useState('no composers'); // API not called yet.
@@ -127,21 +143,11 @@ function App() {
         <button 
             onClick={async () => {
                 setApiResult('fetching composers...');
-                // Needed to set Access-Control-Allow-Origin to * in AWS console in order to make this work.
-                const url =  "https://grhg6g6d90.execute-api.us-west-2.amazonaws.com/ridecheck_generator";
                 const problemData = applyDayRestrict(defaultAppState, 'monday');
                 console.log(problemData);
                 try {
-                    const options = {
-                        'method': 'POST',
-                        'headers': {
-                            'Content-Type': 'application/json',
-                        },
-                        'body': JSON.stringify(problemData)
-                    };
-                    const response = await fetch(url, options);
-                    const json = await response.json();
-                    setApiResult(JSON.stringify(json));
+                    const ridecheck = await fetchRidecheck(problemData)
+                    setApiResult(JSON.stringify(ridecheck));
                 }
                 catch (err) {
                     console.log(err)
