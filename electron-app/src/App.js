@@ -6,6 +6,22 @@ function App() {
     const [appState, setAppState] = useState('dummy state'); // Dummy state.
     const [apiResult, setApiResult] = useState('no composers'); // API not called yet.
 
+    const problem_data = {
+        rides: {
+            rollercoaster: 22,
+            helevator: 10,
+            flume: 13,
+            launcher: 25
+        },
+        workers: { // JSON's keys aren't ordered, have to store array of ride names.
+            alex: ['rollercoaster', 'launcher'],
+            kennedy: ['flume', 'launcher'],
+            gio: ['rollercoaster', 'helevator'],
+            alexa: ['flume', 'helevator']
+        },
+        total_time: 30
+    }
+
     // Set up an object whose .current always tracks appState.
     const appStateRef = useRef(appState);
     useEffect(() => {
@@ -62,13 +78,22 @@ function App() {
         <button 
             onClick={async () => {
                 setApiResult('fetching composers...');
-                const url = "https://api.openopus.org/composer/list/pop.json";
+                // Needed to set Access-Control-Allow-Origin to * in AWS console in order to make this work.
+                const url =  "https://grhg6g6d90.execute-api.us-west-2.amazonaws.com/ridecheck_generator";
                 try {
-                    const response = await fetch(url);
+                    const options = {
+                        'method': 'POST',
+                        'headers': {
+                            'Content-Type': 'application/json',
+                        },
+                        'body': JSON.stringify(problem_data)
+                    };
+                    const response = await fetch(url, options);
                     const json = await response.json();
                     setApiResult(JSON.stringify(json));
                 }
                 catch (err) {
+                    console.log(err)
                     setApiResult('Error fetching composers');
                 }
             }}
