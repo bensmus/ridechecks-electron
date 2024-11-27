@@ -14,6 +14,11 @@ def ridecheck_generator(problem_data):
     rides = list(problem_data['rides'].keys())
     times = list(problem_data['rides'].values())
     ride_domains = [workers_that_can_check(ride, problem_data['workers']) for ride in rides]
+
+    # If domain is empty, a ridecheck is impossible.
+    if any(map(lambda domain: domain == [], ride_domains)):
+        return {}
+    
     workers = list(problem_data['workers'].keys())
     total_time = problem_data['total_time']
 
