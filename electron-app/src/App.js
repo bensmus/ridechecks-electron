@@ -19,7 +19,7 @@ const defaultAppState = {
         monday: {
             time: 25,
             closedRides: ['rollercoaster', 'helevator'],
-            absentWorkers: ['alexa'],
+            absentWorkers: ['alexa', 'kennedy'],
         },
         tuesday: {
             time: 50,
@@ -83,11 +83,18 @@ async function fetchRidecheck(problemData) {
 }
 
 async function fetchAllRidechecks(appState) {
-    const promises = Object.keys(appState.dayrestrict).map(day => {
+    const days = Object.keys(appState.dayrestrict)
+    const promises = days.map(day => {
         const problemData = applyDayRestrict(appState, day);
         return fetchRidecheck(problemData);
     });
-    return Promise.all(promises)
+    const ridechecksArray = await Promise.all(promises);
+    const ridechecks = {};
+    ridechecksArray.forEach((ridecheck, index) => {
+        const day = days[index];
+        ridechecks[day] = ridecheck;
+    })
+    return ridechecks;
 }
 
 function App() {
