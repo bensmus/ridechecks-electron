@@ -67,7 +67,7 @@ def lambda_handler(event, context):
             "headers": {
                 "Content-Type": "application/json"
             },
-            "body": json.dumps({"ridecheck": response})
+            "body": json.dumps(response)
         }
     except Exception as e:
         return {
