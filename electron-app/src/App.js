@@ -2,7 +2,7 @@ import logo from './logo.svg';
 import './App.css';
 import { useEffect, useState, useRef } from 'react';
 
-const initialAppState = {
+const defaultAppState = {
     rides: {
         rollercoaster: 22,
         helevator: 10,
@@ -79,7 +79,8 @@ function App() {
     // https://stackoverflow.com/questions/66993812/usestate-vs-useeffect-setting-initial-value
     useEffect(() => { // useEffect runs after first render.
         async function loadAppState() {
-            const {success, appState} = await window.appState.load();
+            // If there is no state to load, makes the file and stores an example state.
+            const {success, appState} = await window.appState.load(JSON.stringify(defaultAppState));
             if (!success) {
                 console.error('cannot load application state')
             }
@@ -128,7 +129,7 @@ function App() {
                 setApiResult('fetching composers...');
                 // Needed to set Access-Control-Allow-Origin to * in AWS console in order to make this work.
                 const url =  "https://grhg6g6d90.execute-api.us-west-2.amazonaws.com/ridecheck_generator";
-                const problemData = applyDayRestrict(initialAppState, 'monday');
+                const problemData = applyDayRestrict(defaultAppState, 'monday');
                 console.log(problemData);
                 try {
                     const options = {

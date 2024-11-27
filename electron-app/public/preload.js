@@ -15,7 +15,7 @@ process.once("loaded", () => {
     contextBridge.exposeInMainWorld('appState', {
         // relpath is relative to app.getPath('userData')
         store: (state) => ipcRenderer.invoke('appStateStore', state),
-        load: () => ipcRenderer.invoke('appStateLoad'),
+        load: (defaultState) => ipcRenderer.invoke('appStateLoad', defaultState),
         isSaved: () => ipcRenderer.send('appStateSaved') // send with on, invoke with handle.
     });
     contextBridge.exposeInMainWorld('ridechecksSave', {
