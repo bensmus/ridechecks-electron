@@ -82,6 +82,14 @@ async function fetchRidecheck(problemData) {
     return ridecheck;
 }
 
+async function fetchAllRidechecks(appState) {
+    const promises = Object.keys(appState.dayrestrict).map(day => {
+        const problemData = applyDayRestrict(appState, day);
+        return fetchRidecheck(problemData);
+    });
+    return Promise.all(promises)
+}
+
 function App() {
     const [appState, setAppState] = useState('dummy state'); // Dummy state.
     const [apiResult, setApiResult] = useState('no composers'); // API not called yet.
@@ -143,11 +151,9 @@ function App() {
         <button 
             onClick={async () => {
                 setApiResult('fetching composers...');
-                const problemData = applyDayRestrict(defaultAppState, 'monday');
-                console.log(problemData);
                 try {
-                    const ridecheck = await fetchRidecheck(problemData)
-                    setApiResult(JSON.stringify(ridecheck));
+                    const ridechecks = await fetchAllRidechecks(defaultAppState)
+                    setApiResult(JSON.stringify(ridechecks));
                 }
                 catch (err) {
                     console.log(err)
