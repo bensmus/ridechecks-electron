@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import EditableTable from './components/EditableTable';
 import { remove } from "lodash";
+import './App.css';
 
 const defaultAppState = {
     rides: {
@@ -256,6 +257,10 @@ function App() {
         return rows;
     }
 
+    function setRidechecks(newRidechecks) {
+        setAppState((state) => ({...state, ridechecks: newRidechecks}));
+    }
+
     const numRides = getRides().length;
 
     // Return four EditableTable components: 
@@ -272,7 +277,10 @@ function App() {
                 header={['ride'].concat(getRidecheckDays())}
                 inputTypes={Array(getRidecheckDays().length + 1).fill('na')}
             />
-            <button>generate</button>
+            <button onClick={async () => {
+                const ridechecks = await fetchAllRidechecks(appState);
+                setRidechecks(ridechecks);
+            }}>generate</button>
             <button>save ridechecks CSV</button>
         </section>
         
