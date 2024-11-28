@@ -1,6 +1,6 @@
-import logo from './logo.svg';
-import './App.css';
 import { useEffect, useState, useRef } from 'react';
+import EditableTable from './components/EditableTable';
+import { remove } from "lodash";
 
 const defaultAppState = {
     rides: {
@@ -98,10 +98,9 @@ async function fetchAllRidechecks(appState) {
 }
 
 function App() {
-    const [appState, setAppState] = useState('dummy state'); // Dummy state.
-    const [apiResult, setApiResult] = useState('no composers'); // API not called yet.
+    const [appState, setAppState] = useState(defaultAppState);
 
-    // Set up an object whose .current always tracks appState.
+    // Set up an object whose .current always tracks appState (useEffect with no deps array).
     const appStateRef = useRef(appState);
     useEffect(() => {
         appStateRef.current = appState;
@@ -111,12 +110,11 @@ function App() {
     useEffect(() => { // useEffect runs after first render.
         async function loadAppState() {
             // If there is no state to load, makes the file and stores an example state.
-            const {success, appState} = await window.appState.load(JSON.stringify(defaultAppState));
+            const {success, appStateString } = await window.appState.load(JSON.stringify(defaultAppState));
             if (!success) {
                 console.error('cannot load application state')
             }
-            console.log(appState);
-            setAppState(appState);
+            setAppState(JSON.parse(appStateString));
         }
 
         loadAppState();
@@ -134,43 +132,187 @@ function App() {
         }
     }, [])
 
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-        <p>appState: {appState}</p>
-        <input onChange={(e) => {setAppState(e.target.value)}}></input>
-        <button onClick={(e) => {window.ridechecksSave.ridechecksSave('1 + 1 == 2')}}>
-            A simple mathematical fact, saved to a location of your choosing
-        </button>
-        <p>apiResult: {apiResult}</p>
-        <button 
-            onClick={async () => {
-                setApiResult('fetching composers...');
-                try {
-                    const ridechecks = await fetchAllRidechecks(defaultAppState)
-                    setApiResult(JSON.stringify(ridechecks));
+    function cloneAppState() {
+        return JSON.parse(JSON.stringify(appState));
+    }
+
+    function getRideRows() {
+        return Object.entries(appState.rides);
+    }
+
+    function getRides() {
+        console.log(appState)
+        return Object.keys(appState.rides);
+    }
+
+    function getWorkers() {
+        return Object.keys(appState.workers);
+    }
+
+    // Might be out of date with dayrestrict.
+    function getRidecheckDays() {
+        return Object.keys(appState.ridechecks);
+    }
+
+    function setRideRows(newRows) {
+        const newAppState = cloneAppState();
+        const rides = [];
+        // Update newAppState.rides
+        newAppState.rides = Object.fromEntries(newRows);
+        for (const [ride] of newRows) {
+            rides.push(ride);
+        }
+        // Update newAppState.workers
+        for (const worker in newAppState.workers) {
+            const workerRides = newAppState.workers[worker];
+            remove(workerRides, ride => !rides.includes(ride));
+        }
+        // Update newAppState.dayrestrict
+        for (const day in newAppState.dayrestrict) {
+            const dayClosedRides = newAppState.dayrestrict[day].closedRides;
+            remove(dayClosedRides, ride => !rides.includes(ride));
+        }
+        setAppState(newAppState);
+    }
+
+    function getWorkerRows() {
+        const rows = [];
+        for (const worker in appState.workers) {
+            const workerRides = appState.workers[worker];
+            function workerCanCheck(ride) { return workerRides.includes(ride); }
+            const row = [worker].concat(getRides().map(workerCanCheck));
+            rows.push(row);
+        }
+        return rows;
+    }
+
+    function setWorkerRows(newRows) {
+        const newAppState = cloneAppState();
+        const rides = getRides();
+        // Update newAppState.workers
+        newAppState.workers = {};
+        const workers = [];
+        for (const row of newRows) {
+            const [worker, ...rideBools] = row;
+            workers.push(worker);
+            const workerRides = [];
+            // Loop through the checkboxes
+            for (const [rideIdx, rideBool] of rideBools.entries()) {
+                if (rideBool) {
+                    workerRides.push(rides[rideIdx]);
                 }
-                catch (err) {
-                    console.log(err)
-                    setApiResult('Error fetching composers');
-                }
-            }}
-        >composerButton</button>
-      </header>
-    </div>
-  );
+            }
+            newAppState.workers[worker] = workerRides;
+        }
+        // Update newAppState.dayrestrict
+        for (const day in newAppState.dayrestrict) {
+            const dayAbsentWorkers = newAppState.dayrestrict[day].absentWorkers;
+            remove(dayAbsentWorkers, worker => !workers.includes(worker));
+        }
+        setAppState(newAppState);
+    }
+
+    function getDayrestrictRows() {
+        const rows = [];
+        for (const day in appState.dayrestrict) {
+            const obj = appState.dayrestrict[day];
+            const row = [
+                day,
+                obj.time,
+                {allset: getWorkers(), subset: obj.absentWorkers},
+                {allset: getRides(), subset: obj.closedRides},
+            ];
+            rows.push(row);
+        }
+        return rows;
+    }
+
+    function setDayrestrictRows(newRows) {
+        const newAppState = cloneAppState();
+        newAppState.dayrestrict = {};
+        for (const [day, time, absentWorkersObj, closedRidesObj] of newRows) {
+            newAppState.dayrestrict[day] = {
+                time: time,
+                absentWorkers: absentWorkersObj.subset,
+                closedRides: closedRidesObj.subset,
+            };
+        }
+        setAppState(newAppState);
+    }
+
+    function getRidecheckRows() {
+        const rows = [];
+
+        const ridecheckDays = getRidecheckDays();
+        for (const ride in appState.ridechecks[ridecheckDays[0]]) {
+            const row = [ride];
+            for (const day of ridecheckDays) {
+                row.push(appState.ridechecks[day][ride]);
+            }
+            rows.push(row);
+        }
+        return rows;
+    }
+
+    const numRides = getRides().length;
+
+    // Return four EditableTable components: 
+    // Ridechecks, Dayrestrict, Workers, and Rides.
+    // Ridechecks is not user editable.
+    return <>
+        {/* RIDECHECKS TABLE */}
+        <section>
+            <h1>Ridechecks</h1>
+            <EditableTable
+                mutableRowCount={false}
+                rows={getRidecheckRows()}
+                setRows={() => {}} // Will never be called.
+                header={['ride'].concat(getRidecheckDays())}
+                inputTypes={Array(getRidecheckDays().length + 1).fill('na')}
+            />
+            <button>generate</button>
+            <button>save ridechecks CSV</button>
+        </section>
+        
+        {/* DAYRESTRICT TABLE */}
+        <section>
+            <h1>Day restrictions</h1>
+            <EditableTable
+                mutableRowCount={true}
+                rows={getDayrestrictRows()}
+                setRows={setDayrestrictRows}
+                header={['day', 'time till open', 'absent workers', 'closed rides']}
+                inputTypes={['text', 'number', 'subset', 'subset']}
+                defaultRow={['--day--', 100, { allset: getWorkers(), subset: [] }, { allset: getRides(), subset: [] }]}
+            />
+        </section>
+        
+        <section>
+            <h1>Workers</h1>
+            {/* WORKERS TABLE*/}
+            <EditableTable
+                mutableRowCount={true}
+                rows={getWorkerRows()}
+                setRows={setWorkerRows}
+                header={['worker'].concat(getRides())}
+                inputTypes={['text'].concat(Array(numRides).fill('checkbox'))}
+                defaultRow={['--worker--'].concat(Array(numRides).fill(false))}
+            />
+        </section>
+
+        <section>
+            <h1>Rides</h1>
+            {/* RIDE TABLE */}
+            <EditableTable
+                mutableRowCount={true}
+                rows={getRideRows()}
+                setRows={setRideRows}
+                header={['ride', 'time to check']}
+                inputTypes={['text', 'number']}
+                defaultRow={['--ride--', 0]}
+            />
+        </section>
+    </>;
 }
 
 export default App;

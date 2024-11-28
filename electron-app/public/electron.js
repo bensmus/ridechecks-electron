@@ -111,8 +111,8 @@ ipcMain.handle('appStateLoad', async (event, defaultState) => {
         if (!fs.existsSync(filePath)) { // First time app is opened on computer.
             fs.writeFileSync(filePath, defaultState, 'utf-8');
         }
-        const appState = fs.readFileSync(filePath, 'utf-8');
-        return { success: true, appState };
+        const appStateString = fs.readFileSync(filePath, 'utf-8');
+        return { success: true, appStateString: appStateString };
     } catch (err) {
         console.error('Error reading file:', err);
         return { success: false, error: err.message };
