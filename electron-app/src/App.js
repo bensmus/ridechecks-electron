@@ -46,6 +46,12 @@ const defaultAppState = {
     }
 };
 
+function getCsvString(headerArray, twoDimRowArray) {
+    let csvString = headerArray.join(",") + "\n";
+    csvString += twoDimRowArray.map(row => row.join(",")).join("\n");
+    return csvString;
+}
+
 // Ridecheck generation is done for a certain day,
 // and we need to filter out closedRides and absentWorkers.
 function applyDayRestrict(appState, day) {
@@ -274,6 +280,10 @@ function App() {
     }
 
     const numRides = getRides().length;
+    
+    function getRidecheckHeader() {
+        return ['ride'].concat(getRidecheckDays());
+    }
 
     // Return four EditableTable components: 
     // Ridechecks, Dayrestrict, Workers, and Rides.
@@ -286,7 +296,7 @@ function App() {
                 mutableRowCount={false}
                 rows={getRidecheckRows()}
                 setRows={() => {}} // Will never be called.
-                header={['ride'].concat(getRidecheckDays())}
+                header={getRidecheckHeader()}
                 inputTypes={Array(getRidecheckDays().length + 1).fill('na')}
             />
             <button onClick={async () => {
@@ -300,7 +310,9 @@ function App() {
                     alert(`Could not generate schedule: ${response.error}. Ensure form filled correctly`);
                 }
             }}>generate</button>
-            <button>save ridechecks CSV</button>
+            <button onClick={() => {
+                window.ridechecksSave.ridechecksSave(getCsvString(getRidecheckHeader(), getRidecheckRows()));
+            }}>save ridechecks CSV</button>
         </section>
         
         {/* DAYRESTRICT TABLE */}
