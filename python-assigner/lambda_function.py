@@ -17,7 +17,7 @@ def ridecheck_generator(problem_data):
 
     # If domain is empty, a ridecheck is impossible.
     if any(map(lambda domain: domain == [], ride_domains)):
-        return {}
+        return None
     
     workers = list(problem_data['workers'].keys())
     total_time = problem_data['total_time']
@@ -64,7 +64,7 @@ def lambda_handler(event, context):
         if missing_keys:
             raise ValueError(f"Missing required keys: {', '.join(missing_keys)}")
     
-        response = ridecheck_generator(problem_data)
+        ridecheck = ridecheck_generator(problem_data)
 
         # Construct the response
         return {
@@ -72,7 +72,7 @@ def lambda_handler(event, context):
             "headers": {
                 "Content-Type": "application/json"
             },
-            "body": json.dumps(response)
+            "body": json.dumps({'success': True, 'ridecheck': ridecheck})
         }
     except Exception as e:
         return {
@@ -80,5 +80,5 @@ def lambda_handler(event, context):
             "headers": {
                 "Content-Type": "application/json"
             },
-            "body": json.dumps({"error": str(e)})
+            "body": json.dumps({'success': False, "error": str(e)})
         }

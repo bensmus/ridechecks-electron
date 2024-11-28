@@ -79,8 +79,8 @@ async function fetchRidecheck(problemData) {
         'body': JSON.stringify(problemData)
     };
     const response = await fetch(url, options);
-    const ridecheck = await response.json();
-    return ridecheck;
+    const json = await response.json();
+    return json;
 }
 
 async function fetchAllRidechecks(appState) {
@@ -89,13 +89,26 @@ async function fetchAllRidechecks(appState) {
         const problemData = applyDayRestrict(appState, day);
         return fetchRidecheck(problemData);
     });
-    const ridechecksArray = await Promise.all(promises);
+    const jsonArray = await Promise.all(promises);
+    console.log(jsonArray);
     const ridechecks = {};
-    ridechecksArray.forEach((ridecheck, index) => {
+    const couldNotGenerateDays = [];
+    for (let index = 0; index < jsonArray.length; index++) {
+        const json = jsonArray[index];
+        if (json.success === false) {
+            return {error: json.error};
+        }
         const day = days[index];
-        ridechecks[day] = ridecheck;
-    })
-    return ridechecks;
+        if (json.ridecheck === null) {
+            couldNotGenerateDays.push(day);
+        }
+        ridechecks[day] = json.ridecheck;
+    }
+    if (couldNotGenerateDays.length !== 0) {
+        return {couldNotGenerateDays};
+    } else {
+        return {ridechecks};
+    }
 }
 
 function App() {
@@ -144,7 +157,6 @@ function App() {
     }
 
     function getRides() {
-        console.log(appState)
         return Object.keys(appState.rides);
     }
 
@@ -278,8 +290,15 @@ function App() {
                 inputTypes={Array(getRidecheckDays().length + 1).fill('na')}
             />
             <button onClick={async () => {
-                const ridechecks = await fetchAllRidechecks(appState);
-                setRidechecks(ridechecks);
+                const response = await fetchAllRidechecks(appState);
+                console.log(response)
+                if ('ridechecks' in response) {
+                    setRidechecks(response.ridechecks);
+                } else if ('couldNotGenerateDays' in response) { // One or more days was impossible to generate:
+                    alert(`Impossible scheduling for ${JSON.stringify(response.couldNotGenerateDays)}`);
+                } else if ('error' in response) {
+                    alert(`Could not generate schedule: ${response.error}. Ensure form filled correctly`);
+                }
             }}>generate</button>
             <button>save ridechecks CSV</button>
         </section>
