@@ -109,8 +109,9 @@ function App() {
     // https://stackoverflow.com/questions/66993812/usestate-vs-useeffect-setting-initial-value
     useEffect(() => { // useEffect runs after first render.
         async function loadAppState() {
-            // If there is no state to load, makes the file and stores an example state.
-            const {success, appStateString } = await window.appState.load(JSON.stringify(defaultAppState));
+            const defaultAppStateString = JSON.stringify(defaultAppState);
+            // If there is no state to load, makes the file and stores default state.
+            const {success, appStateString } = await window.appState.load(defaultAppStateString);
             if (!success) {
                 console.error('cannot load application state')
             }
@@ -122,7 +123,8 @@ function App() {
         // Define callback for appStateSaveRequest, which is fired by the
         // main process when the window 'X' button is hit.
         window.electronListener.appStateSaveRequest(async () => {
-            await window.appState.store(appStateRef.current);
+            const appStateString = JSON.stringify(appStateRef.current);
+            await window.appState.store(appStateString);
             window.appState.isSaved(); // Let main process know save was completed.
         });
 
