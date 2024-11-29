@@ -36,3 +36,7 @@ h1 {
     margin: 0; /* Removes default margins */
     margin-bottom: 0.5rem;
 }
+
+#generate-button {
+    width: 15ch; /* "generating..."is 13 characters */
+}

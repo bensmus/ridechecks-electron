@@ -285,6 +285,9 @@ function App() {
         return ['ride'].concat(getRidecheckDays());
     }
 
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [isOpeningSaveDialog, setIsOpeningSaveDialog] = useState(false);
+
     // Return four EditableTable components: 
     // Ridechecks, Dayrestrict, Workers, and Rides.
     // Ridechecks is not user editable.
@@ -299,8 +302,10 @@ function App() {
                 header={getRidecheckHeader()}
                 inputTypes={Array(getRidecheckDays().length + 1).fill('na')}
             />
-            <button onClick={async () => {
+            <button id="generate-button" disabled={isGenerating} onClick={async () => {
+                setIsGenerating(true);
                 const response = await fetchAllRidechecks(appState);
+                setIsGenerating(false);
                 console.log(response)
                 if ('ridechecks' in response) {
                     setRidechecks(response.ridechecks);
@@ -309,10 +314,12 @@ function App() {
                 } else if ('error' in response) {
                     window.message.show(`Could not generate schedule: ${response.error}. Ensure form filled correctly`);
                 }
-            }}>generate</button>
-            <button onClick={() => {
-                window.ridechecksSave.ridechecksSave(getCsvString(getRidecheckHeader(), getRidecheckRows()));
-            }}>save ridechecks CSV</button>
+            }}>{isGenerating ? "generating..." : "generate"}</button>
+            <button disabled={isOpeningSaveDialog} onClick={async () => {
+                setIsOpeningSaveDialog(true);
+                await window.ridechecksSave.ridechecksSave(getCsvString(getRidecheckHeader(), getRidecheckRows()));
+                setIsOpeningSaveDialog(false);
+            }}>{isOpeningSaveDialog ? "working..." : "save ridechecks CSV"}</button>
         </section>
         
         {/* DAYRESTRICT TABLE */}
