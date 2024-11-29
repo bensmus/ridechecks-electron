@@ -305,9 +305,9 @@ function App() {
                 if ('ridechecks' in response) {
                     setRidechecks(response.ridechecks);
                 } else if ('couldNotGenerateDays' in response) { // One or more days was impossible to generate:
-                    alert(`Impossible scheduling for ${JSON.stringify(response.couldNotGenerateDays)}`);
+                    window.message.show(`Impossible scheduling for ${JSON.stringify(response.couldNotGenerateDays)}`);
                 } else if ('error' in response) {
-                    alert(`Could not generate schedule: ${response.error}. Ensure form filled correctly`);
+                    window.message.show(`Could not generate schedule: ${response.error}. Ensure form filled correctly`);
                 }
             }}>generate</button>
             <button onClick={() => {
