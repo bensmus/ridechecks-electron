@@ -127,8 +127,8 @@ ipcMain.handle('ridechecksSave', async (event, ridechecks) => {
             { name: 'All Files', extensions: ['*'] }
         ]
     }
-    const {cancelled, filePath} = await dialog.showSaveDialog(options);
-    if (!cancelled) {
+    const {canceled, filePath} = await dialog.showSaveDialog(options);
+    if (!canceled) {
         fs.writeFileSync(filePath, ridechecks);
     }
 })
