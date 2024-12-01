@@ -263,12 +263,11 @@ function App() {
 
     function getRidecheckRows() {
         const rows = [];
-
         const ridecheckDays = getRidecheckDays();
-        for (const ride in appState.ridechecks[ridecheckDays[0]]) {
+        for (const ride of getRides()) {
             const row = [ride];
             for (const day of ridecheckDays) {
-                row.push(appState.ridechecks[day][ride]);
+                row.push(appState.ridechecks[day][ride] ?? "CLOSED");
             }
             rows.push(row);
         }
