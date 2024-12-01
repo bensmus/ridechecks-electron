@@ -73,28 +73,6 @@ function applyDayRestrict(appState, day) {
     return problemData;
 }
 
-// findTrailingNumber("test", "test123")) === 123.
-function findTrailingNumber(baseText, searchString) {
-    const pattern = new RegExp(`^${baseText}(\\d+)$`);
-    const match = searchString.match(pattern);
-    return match ? parseInt(match[1], 10) : null;
-}
-
-// Used for auto-incrementing worker/ride/day names when "add row" button is clicked
-// in the EditableTable component. E.g. "Worker1", "Worker2", "Worker3", ... ,"Worker15".
-function getNextDefault(defaultBase, strings) {
-    let maxNum = 0;
-    for (const string of strings) {
-        const stringNum = findTrailingNumber(defaultBase, string);
-        console.log(stringNum);
-        if (stringNum) {
-            maxNum = Math.max(maxNum, stringNum);
-        }
-    }
-    const nextDefault = `${defaultBase}${maxNum + 1}`;
-    return nextDefault;
-}
-
 // problemData is for one specific day, as is a ridecheck.
 async function fetchRidecheck(problemData) {
     // Needed to set Access-Control-Allow-Origin to * in AWS console in order to make this work.
@@ -356,7 +334,7 @@ function App() {
                 setRows={setDayrestrictRows}
                 header={['day', 'time till open', 'absent workers', 'closed rides']}
                 inputTypes={['text', 'number', 'subset', 'subset']}
-                defaultRow={[getNextDefault('Day', getDayrestrictDays()), 100, { allset: getWorkers(), subset: [] }, { allset: getRides(), subset: [] }]}
+                defaultRow={['--day--', 100, { allset: getWorkers(), subset: [] }, { allset: getRides(), subset: [] }]}
             />
         </section>
         
@@ -369,7 +347,7 @@ function App() {
                 setRows={setWorkerRows}
                 header={['worker'].concat(getRides())}
                 inputTypes={['text'].concat(Array(numRides).fill('checkbox'))}
-                defaultRow={[getNextDefault('Worker', getWorkers())].concat(Array(numRides).fill(false))}
+                defaultRow={['--worker--'].concat(Array(numRides).fill(false))}
             />
         </section>
 
@@ -382,7 +360,7 @@ function App() {
                 setRows={setRideRows}
                 header={['ride', 'time to check']}
                 inputTypes={['text', 'number']}
-                defaultRow={[getNextDefault('Ride', getRides()), 0]}
+                defaultRow={['--ride--', 0]}
             />
         </section>
     </>;
