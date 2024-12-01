@@ -14,14 +14,22 @@ def ridecheck_generator(problem_data):
     rides = list(problem_data['rides'].keys())
     times = list(problem_data['rides'].values())
     ride_domains = [workers_that_can_check(ride, problem_data['workers']) for ride in rides]
-
+    workers = list(problem_data['workers'].keys())
+    total_time = problem_data['total_time']
+    
     # If domain is empty, a ridecheck is impossible.
     if any(map(lambda domain: domain == [], ride_domains)):
         return None
     
-    workers = list(problem_data['workers'].keys())
-    total_time = problem_data['total_time']
+    # If any ride takes longer to check than total_time, a ridecheck is impossible.
+    if any(map(lambda time: time > total_time, times)):
+        return None
 
+    # If the sum of the ride times, perfectly distributed to the workers 
+    # is greater total_time, a ridecheck is impossible.
+    if sum(times) / len(workers) > total_time:
+        return None
+    
     def assigner(
             rides: List[str], 
             times: List[int], 
