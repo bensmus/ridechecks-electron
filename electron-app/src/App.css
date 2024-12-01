@@ -38,5 +38,5 @@ h1 {
 }
 
 #generate-button {
-    width: 15ch; /* "generating..."is 13 characters */
+    width: 17ch; /* "regenerating..."is 15 characters */
 }
