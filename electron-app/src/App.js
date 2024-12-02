@@ -320,7 +320,7 @@ function App() {
     // Ridechecks is not user editable.
     return <>
         {/* RIDECHECKS TABLE */}
-        <section>
+        <section id="ridechecks-section">
             <h1>Ridechecks</h1>
             <EditableTable
                 mutableRowCount={false}
