@@ -64,11 +64,11 @@ function getCsvString(headerArray, twoDimRowArray) {
 // Ridecheck generation is done for a certain day,
 // and we need to filter out closedRides and absentWorkers.
 function applyDayRestrict(appState, day) {
-    const {time, closedRides, absentWorkers} = appState['dayrestrict'].find(obj => obj.day === day);
+    const {time, closedRides, absentWorkers} = appState.dayrestrict.find(obj => obj.day === day);
     const problemData = {
         rides: appState.rides.filter(obj => !closedRides.includes(obj.ride)),
         workers: appState.workers.filter(obj => !absentWorkers.includes(obj.worker)) // Remove workers that are absent.
-            .map(obj => ({...obj, canCheck: obj.canCheck.filter(ride => !closedRides.includes(ride))})), // Remove rides are closed.
+            .map(obj => ({...obj, canCheck: obj.canCheck.filter(ride => !closedRides.includes(ride))})), // Remove rides that are closed.
         total_time: time
     }
     return problemData;
@@ -91,7 +91,7 @@ async function fetchRidecheck(problemData) {
 }
 
 async function fetchAllRidechecks(appState) {
-    const days = Object.keys(appState.dayrestrict)
+    const days = appState.dayrestrict.map(obj => obj.day);
     const promises = days.map(day => {
         const problemData = applyDayRestrict(appState, day);
         return fetchRidecheck(problemData);
@@ -179,67 +179,63 @@ function App() {
     function setRideRows(newRows) {
         const newAppState = cloneAppState();
         const rides = [];
-        // Update newAppState.rides
-        newAppState.rides = newRows.map(([ride, time]) => {ride, time});
+        // Update newAppState.rides.
+        newAppState.rides = newRows.map(([ride, time]) => ({ride, time}));
         for (const [ride] of newRows) {
             rides.push(ride);
         }
-        // Update newAppState.workers // TODO
-        for (const worker in newAppState.workers) {
-            const workerRides = newAppState.workers[worker];
-            remove(workerRides, ride => !rides.includes(ride));
+        // Update newAppState.workers by removing nonexistent rides.
+        for (const obj of newAppState.workers) {
+            remove(obj.canCheck, ride => !rides.includes(ride));
         }
-        // Update newAppState.dayrestrict // TODO
-        for (const day in newAppState.dayrestrict) {
-            const dayClosedRides = newAppState.dayrestrict[day].closedRides;
-            remove(dayClosedRides, ride => !rides.includes(ride));
+        // Update newAppState.dayrestrict.
+        for (const obj of newAppState.dayrestrict) {
+            remove(obj.closedRides, ride => !rides.includes(ride));
         }
         setAppState(newAppState);
     }
 
-    function getWorkerRows() { // TODO
+    // Worker rows have "worker", "checkbox1", ... "checkboxN".
+    function getWorkerRows() {
         const rows = [];
-        for (const worker in appState.workers) {
-            const workerRides = appState.workers[worker];
-            function workerCanCheck(ride) { return workerRides.includes(ride); }
+        for (const {worker, canCheck} of appState.workers) {
+            function workerCanCheck(ride) { return canCheck.includes(ride); }
             const row = [worker].concat(getRides().map(workerCanCheck));
             rows.push(row);
         }
         return rows;
     }
 
-    function setWorkerRows(newRows) { // TODO
+    function setWorkerRows(newRows) {
         const newAppState = cloneAppState();
         const rides = getRides();
         // Update newAppState.workers
-        newAppState.workers = {};
+        newAppState.workers = [];
         const workers = [];
         for (const row of newRows) {
             const [worker, ...rideBools] = row;
             workers.push(worker);
-            const workerRides = [];
+            const canCheck = [];
             // Loop through the checkboxes
             for (const [rideIdx, rideBool] of rideBools.entries()) {
                 if (rideBool) {
-                    workerRides.push(rides[rideIdx]);
+                    canCheck.push(rides[rideIdx]);
                 }
             }
-            newAppState.workers[worker] = workerRides;
+            newAppState.workers.push({worker, canCheck});
         }
         // Update newAppState.dayrestrict
-        for (const day in newAppState.dayrestrict) {
-            const dayAbsentWorkers = newAppState.dayrestrict[day].absentWorkers;
-            remove(dayAbsentWorkers, worker => !workers.includes(worker));
+        for (const obj of newAppState.dayrestrict) {
+            remove(obj.absentWorkers, worker => !workers.includes(worker));
         }
         setAppState(newAppState);
     }
 
-    function getDayrestrictRows() { // TODO
+    function getDayrestrictRows() {
         const rows = [];
-        for (const day in appState.dayrestrict) {
-            const obj = appState.dayrestrict[day];
+        for (const obj of appState.dayrestrict) {
             const row = [
-                day,
+                obj.day,
                 obj.time,
                 {allset: getWorkers(), subset: obj.absentWorkers},
                 {allset: getRides(), subset: obj.closedRides},
@@ -249,26 +245,28 @@ function App() {
         return rows;
     }
 
-    function setDayrestrictRows(newRows) { // TODO
+    function setDayrestrictRows(newRows) {
         const newAppState = cloneAppState();
-        newAppState.dayrestrict = {};
+        newAppState.dayrestrict = [];
         for (const [day, time, absentWorkersObj, closedRidesObj] of newRows) {
-            newAppState.dayrestrict[day] = {
-                time: time,
+            newAppState.dayrestrict.push({
+                day,
+                time,
                 absentWorkers: absentWorkersObj.subset,
                 closedRides: closedRidesObj.subset,
-            };
+            });
         }
         setAppState(newAppState);
     }
 
-    function getRidecheckRows() { // TODO
+    function getRidecheckRows() {
         const rows = [];
         const ridecheckDays = getRidecheckDays();
         for (const ride of getRides()) {
             const row = [ride];
             for (const day of ridecheckDays) {
-                row.push(appState.ridechecks[day][ride] ?? "CLOSED");
+                const obj = appState.ridechecks.find(obj => obj.day === day);
+                row.push(obj.ridecheck[ride] ?? "CLOSED");
             }
             rows.push(row);
         }

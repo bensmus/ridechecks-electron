@@ -17,7 +17,7 @@ def ridecheck_generator(problem_data):
     rides = list(map(lambda d: d['ride'], problem_data['rides']))
     times = list(map(lambda d: d['time'], problem_data['rides']))
     workers = list(map(lambda d: d['worker'], problem_data['workers']))
-    workers_rides = list(map(lambda d: d['canCheck'], problem_data['worker']))
+    workers_rides = list(map(lambda d: d['canCheck'], problem_data['workers']))
     total_time = problem_data['total_time']
     ride_domains = compute_ride_domains(rides, workers, workers_rides)
     
