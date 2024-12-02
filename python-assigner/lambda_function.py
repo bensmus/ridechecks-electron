@@ -24,6 +24,9 @@ def ridecheck_generator(problem_data):
     if len(set(workers)) != len(workers):
         raise Exception("Duplicate worker")
     
+    if len(set(rides)) != len(rides):
+        raise Exception("Duplicate ride")
+    
     # If domain is empty, a ridecheck is impossible.
     if any(map(lambda domain: domain == [], ride_domains)):
         return None
