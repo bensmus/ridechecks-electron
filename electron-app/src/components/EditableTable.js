@@ -1,6 +1,10 @@
 import SubsetSelector from './SubsetSelector';
 
-function Row({ row, rowUpdate, inputTypes }) {
+function getTitleCase(str) {
+    return str.replace(/\w+/, text => text.charAt(0).toUpperCase() + text.substring(1).toLowerCase())
+}
+
+function Row({ row, rowUpdate, inputTypes, forceCapitalization='none' }) {
     function renderInput(value, valueIdx, inputType) {
         if (inputType === 'checkbox') {
             return <input
@@ -39,7 +43,17 @@ function Row({ row, rowUpdate, inputTypes }) {
         else if (inputType === 'text') {
             return <input
                 type='text'
-                onChange={(e) => rowUpdate(e.target.value, valueIdx)}
+                onChange={(e) => {
+                    let updateWith = e.target.value;
+                    switch (forceCapitalization) {
+                        case 'titlecase':
+                            updateWith = getTitleCase(updateWith);
+                            break;
+                        default:
+                            break;
+                    }
+                    rowUpdate(updateWith, valueIdx);
+                }}
                 value={value}
             ></input>;
         }
@@ -59,7 +73,7 @@ function Row({ row, rowUpdate, inputTypes }) {
     );
 }
 
-function EditableTable({ rows, setRows, header, inputTypes, defaultRow, mutableRowCount }) {
+function EditableTable({ rows, setRows, header, inputTypes, defaultRow, mutableRowCount, forceCapitalization }) {
     function cloneRows(rows) {
         return JSON.parse(JSON.stringify(rows));
     }
@@ -80,7 +94,7 @@ function EditableTable({ rows, setRows, header, inputTypes, defaultRow, mutableR
         return <button onClick={() => {
             const newRows = [...cloneRows(rows), defaultRow];
             setRows(newRows);
-        }}>add row</button>
+        }}>Add row</button>
     }
     return (
         <>
@@ -95,6 +109,7 @@ function EditableTable({ rows, setRows, header, inputTypes, defaultRow, mutableR
                             row={row}
                             rowUpdate={(newValue, valueIdx) => rowsUpdate(newValue, valueIdx, rowIdx)}
                             inputTypes={inputTypes}
+                            forceCapitalization={forceCapitalization}
                         /></tr>
                     )}
                 </tbody>

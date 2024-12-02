@@ -306,7 +306,7 @@ function App() {
     const numRides = getRides().length;
     
     function getRidecheckHeader() {
-        return ['ride'].concat(getRidecheckDays());
+        return ['Ride'].concat(getRidecheckDays());
     }
 
     const [isGenerating, setIsGenerating] = useState(false);
@@ -341,12 +341,12 @@ function App() {
                 } else if ('error' in response) {
                     window.message.show(`Could not generate schedule: ${response.error}. Ensure form filled correctly`);
                 }
-            }}>{isGenerating ? "regenerating..." : "regenerate"}</button>
+            }}>{isGenerating ? "Regenerating..." : "Regenerate"}</button>
             <button disabled={isOpeningSaveDialog} onClick={async () => {
                 setIsOpeningSaveDialog(true);
                 await window.ridechecksSave.ridechecksSave(getCsvString(getRidecheckHeader(), getRidecheckRows()));
                 setIsOpeningSaveDialog(false);
-            }}>{isOpeningSaveDialog ? "working..." : "save ridechecks CSV"}</button>
+            }}>{isOpeningSaveDialog ? "Working..." : "Save ridechecks CSV"}</button>
         </section>
         
         {/* DAYRESTRICT TABLE */}
@@ -356,9 +356,10 @@ function App() {
                 mutableRowCount={true}
                 rows={getDayrestrictRows()}
                 setRows={setDayrestrictRows}
-                header={['day', 'time till open', 'absent workers', 'closed rides']}
+                header={['Day', 'Time till open', 'Absent workers', 'Closed rides']}
                 inputTypes={['text', 'number', 'subset', 'subset']}
                 defaultRow={[defaultDay, 100, { allset: getWorkers(), subset: [] }, { allset: getRides(), subset: [] }]}
+                forceCapitalization="titlecase"
             />
         </section>
         
@@ -369,9 +370,10 @@ function App() {
                 mutableRowCount={true}
                 rows={getWorkerRows()}
                 setRows={setWorkerRows}
-                header={['worker'].concat(getRides())}
+                header={['Worker'].concat(getRides())}
                 inputTypes={['text'].concat(Array(numRides).fill('checkbox'))}
                 defaultRow={[defaultWorker].concat(Array(numRides).fill(false))}
+                forceCapitalization="titlecase"
             />
         </section>
 
@@ -382,9 +384,10 @@ function App() {
                 mutableRowCount={true}
                 rows={getRideRows()}
                 setRows={setRideRows}
-                header={['ride', 'time to check']}
+                header={['Ride', 'Time to check']}
                 inputTypes={['text', 'number']}
                 defaultRow={[defaultRide, 0]}
+                forceCapitalization="titlecase"
             />
         </section>
     </>;
