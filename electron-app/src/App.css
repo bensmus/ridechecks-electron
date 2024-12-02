@@ -26,6 +26,14 @@ td > input, td > button {
     margin: 3px;
 }
 
+td > input[type=checkbox] {
+    width: 100%; /* Make checkbox easy to click */
+}
+
+td > input[type=checkbox]:hover {
+    outline: 2px solid red; /* Easy to see if checkbox is clickable */
+}
+
 section > button {
     margin-top: 5px;
     margin-right: 5px;
