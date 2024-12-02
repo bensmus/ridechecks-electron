@@ -4,47 +4,56 @@ import { remove } from "lodash";
 import './App.css';
 
 const defaultAppState = {
-    rides: {
-        rollercoaster: 22,
-        helevator: 10,
-        flume: 13,
-        launcher: 25
-    },
-    workers: { // JSON's keys aren't ordered, have to store array of ride names.
-        alex: ['rollercoaster', 'launcher'],
-        kennedy: ['flume', 'launcher'],
-        gio: ['rollercoaster', 'helevator'],
-        alexa: ['flume', 'helevator']
-    },
-    dayrestrict: {
-        monday: {
+    rides: [
+        {ride: 'rollercoaster', time: 22},
+        {ride: 'helevator', time: 10},
+        {ride: 'flume', time: 13},
+        {ride: 'launcher', time: 25}
+    ],
+    workers: [
+        {worker: 'alex', canCheck: ['rollercoaster', 'launcher']},
+        {worker: 'kennedy', canCheck: ['flume', 'launcher']},
+        {worker: 'gio', canCheck: ['rollercoaster', 'helevator']},
+        {worker: 'alexa', canCheck: ['flume', 'helevator']}
+    ],
+    dayrestrict: [
+        {
+            day: 'monday',
             time: 25,
             closedRides: ['rollercoaster', 'helevator'],
             absentWorkers: ['alexa', 'kennedy'],
         },
-        tuesday: {
+        {
+            day: 'tuesday',
             time: 50,
             closedRides: [],
             absentWorkers: ['kennedy'],
         }
-    },
+    ],
     // ridechecks: Not user editable. It may be out of sync with dayrestrict
     // (for example if the day name changes) until generate is hit again.
-    ridechecks: { 
-        thursday: {
-            'rollercoaster': 'alex',
-            'flume': 'alexa',
-            'launcher': 'gio',
-            'helevator': 'kennedy'
+    ridechecks: [
+        {
+            day: 'thursday',
+            ridecheck: {
+                'rollercoaster': 'alex',
+                'flume': 'alexa',
+                'launcher': 'gio',
+                'helevator': 'kennedy'
+            }
         },
-        tuesday: {
-            'rollercoaster': 'alex',
-            'flume': 'alexa',
-            'launcher': 'gio',
-            'helevator': 'kennedy'
+        {
+            day: 'tuesday',
+            ridecheck: {
+                'rollercoaster': 'alex',
+                'flume': 'alexa',
+                'launcher': 'gio',
+                'helevator': 'kennedy'
+            }
         }
-    }
+    ]
 };
+
 
 function getCsvString(headerArray, twoDimRowArray) {
     let csvString = headerArray.join(",") + "\n";
@@ -55,19 +64,11 @@ function getCsvString(headerArray, twoDimRowArray) {
 // Ridecheck generation is done for a certain day,
 // and we need to filter out closedRides and absentWorkers.
 function applyDayRestrict(appState, day) {
-    const {time, closedRides, absentWorkers} = appState['dayrestrict'][day]
+    const {time, closedRides, absentWorkers} = appState['dayrestrict'].find(obj => obj.day === day);
     const problemData = {
-        rides: Object.fromEntries(
-            // [ride, time] is being filtered.
-            Object.entries(appState.rides).filter(([ride, _]) => !closedRides.includes(ride))
-        ),
-        workers: Object.fromEntries(
-            Object.entries(appState.workers)
-                // [worker, workerRides] is being filtered.
-                .filter(([worker, _]) => !absentWorkers.includes(worker))
-                // Map workerRides such that it does not contain closed rides.
-                .map(([worker, workerRides]) => ([worker, workerRides.filter(ride => !closedRides.includes(ride))]))
-        ),
+        rides: appState.rides.filter(obj => !closedRides.includes(obj.ride)),
+        workers: appState.workers.filter(obj => !absentWorkers.includes(obj.worker)) // Remove workers that are absent.
+            .map(obj => ({...obj, canCheck: obj.canCheck.filter(ride => !closedRides.includes(ride))})), // Remove rides are closed.
         total_time: time
     }
     return problemData;
@@ -97,7 +98,7 @@ async function fetchAllRidechecks(appState) {
     });
     const jsonArray = await Promise.all(promises);
     console.log(jsonArray);
-    const ridechecks = {};
+    const ridechecks = [];
     const couldNotGenerateDays = [];
     for (let index = 0; index < jsonArray.length; index++) {
         const json = jsonArray[index];
@@ -108,7 +109,7 @@ async function fetchAllRidechecks(appState) {
         if (json.ridecheck === null) {
             couldNotGenerateDays.push(day);
         }
-        ridechecks[day] = json.ridecheck;
+        ridechecks.push({day: day, ridecheck: json.ridecheck});
     }
     if (couldNotGenerateDays.length !== 0) {
         return {couldNotGenerateDays};
@@ -159,40 +160,36 @@ function App() {
     }
 
     function getRideRows() {
-        return Object.entries(appState.rides);
+        return appState.rides.map(obj => [obj.ride, obj.time]);
     }
 
     function getRides() {
-        return Object.keys(appState.rides);
+        return appState.rides.map(obj => obj.ride);
     }
 
     function getWorkers() {
-        return Object.keys(appState.workers);
+        return appState.workers.map(obj => obj.worker);
     }
 
     // Might be out of date with dayrestrict.
     function getRidecheckDays() {
-        return Object.keys(appState.ridechecks);
-    }
-
-    function getDayrestrictDays() {
-        return Object.keys(appState.dayrestrict);
+        return appState.ridechecks.map(obj => obj.day);
     }
 
     function setRideRows(newRows) {
         const newAppState = cloneAppState();
         const rides = [];
         // Update newAppState.rides
-        newAppState.rides = Object.fromEntries(newRows);
+        newAppState.rides = newRows.map(([ride, time]) => {ride, time});
         for (const [ride] of newRows) {
             rides.push(ride);
         }
-        // Update newAppState.workers
+        // Update newAppState.workers // TODO
         for (const worker in newAppState.workers) {
             const workerRides = newAppState.workers[worker];
             remove(workerRides, ride => !rides.includes(ride));
         }
-        // Update newAppState.dayrestrict
+        // Update newAppState.dayrestrict // TODO
         for (const day in newAppState.dayrestrict) {
             const dayClosedRides = newAppState.dayrestrict[day].closedRides;
             remove(dayClosedRides, ride => !rides.includes(ride));
@@ -200,7 +197,7 @@ function App() {
         setAppState(newAppState);
     }
 
-    function getWorkerRows() {
+    function getWorkerRows() { // TODO
         const rows = [];
         for (const worker in appState.workers) {
             const workerRides = appState.workers[worker];
@@ -211,7 +208,7 @@ function App() {
         return rows;
     }
 
-    function setWorkerRows(newRows) {
+    function setWorkerRows(newRows) { // TODO
         const newAppState = cloneAppState();
         const rides = getRides();
         // Update newAppState.workers
@@ -237,7 +234,7 @@ function App() {
         setAppState(newAppState);
     }
 
-    function getDayrestrictRows() {
+    function getDayrestrictRows() { // TODO
         const rows = [];
         for (const day in appState.dayrestrict) {
             const obj = appState.dayrestrict[day];
@@ -252,7 +249,7 @@ function App() {
         return rows;
     }
 
-    function setDayrestrictRows(newRows) {
+    function setDayrestrictRows(newRows) { // TODO
         const newAppState = cloneAppState();
         newAppState.dayrestrict = {};
         for (const [day, time, absentWorkersObj, closedRidesObj] of newRows) {
@@ -265,7 +262,7 @@ function App() {
         setAppState(newAppState);
     }
 
-    function getRidecheckRows() {
+    function getRidecheckRows() { // TODO
         const rows = [];
         const ridecheckDays = getRidecheckDays();
         for (const ride of getRides()) {
@@ -277,7 +274,7 @@ function App() {
         }
         return rows;
     }
-
+ 
     function setRidechecks(newRidechecks) {
         setAppState((state) => ({...state, ridechecks: newRidechecks}));
     }

@@ -4,18 +4,22 @@ from typing import List
 
 
 def ridecheck_generator(problem_data):
-    def workers_that_can_check(ride, worker_permissions):
-        domain = []
-        for worker in worker_permissions:
-            if ride in worker_permissions[worker]:
-                domain.append(worker)
-        return domain
-
-    rides = list(problem_data['rides'].keys())
-    times = list(problem_data['rides'].values())
-    ride_domains = [workers_that_can_check(ride, problem_data['workers']) for ride in rides]
-    workers = list(problem_data['workers'].keys())
+    def compute_ride_domains(rides, workers, workers_rides):
+        ride_domains = []
+        for ride in rides:
+            ride_domain = []
+            for worker, worker_rides in zip(workers, workers_rides):
+                if ride in worker_rides:
+                    ride_domain.append(worker)
+            ride_domains.append(ride_domain)
+        return ride_domains
+    
+    rides = list(map(lambda d: d['ride'], problem_data['rides']))
+    times = list(map(lambda d: d['time'], problem_data['rides']))
+    workers = list(map(lambda d: d['worker'], problem_data['workers']))
+    workers_rides = list(map(lambda d: d['canCheck'], problem_data['worker']))
     total_time = problem_data['total_time']
+    ride_domains = compute_ride_domains(rides, workers, workers_rides)
     
     # If domain is empty, a ridecheck is impossible.
     if any(map(lambda domain: domain == [], ride_domains)):
