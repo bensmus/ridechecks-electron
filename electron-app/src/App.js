@@ -118,6 +118,28 @@ async function fetchAllRidechecks(appState) {
     }
 }
 
+// findTrailingNumber("test", "test123")) === 123.
+function findTrailingNumber(baseText, searchString) {
+    const pattern = new RegExp(`^${baseText}(\\d+)$`);
+    const match = searchString.match(pattern);
+    return match ? parseInt(match[1], 10) : null;
+}
+
+// Used for auto-incrementing worker/ride/day names when "add row" button is clicked
+// in the EditableTable component. E.g. "Worker1", "Worker2", "Worker3", ... ,"Worker15".
+function getNextDefault(defaultBase, strings) {
+    let maxNum = 0;
+    for (const string of strings) {
+        const stringNum = findTrailingNumber(defaultBase, string);
+        console.log(stringNum);
+        if (stringNum) {
+            maxNum = Math.max(maxNum, stringNum);
+        }
+    }
+    const nextDefault = `${defaultBase}${maxNum + 1}`;
+    return nextDefault;
+}
+
 function App() {
     const [appState, setAppState] = useState(defaultAppState);
 
@@ -174,6 +196,10 @@ function App() {
     // Might be out of date with dayrestrict.
     function getRidecheckDays() {
         return appState.ridechecks.map(obj => obj.day);
+    }
+
+    function getDayrestrictDays() {
+        return appState.dayrestrict.map(obj => obj.day);
     }
 
     function setRideRows(newRows) {
@@ -285,6 +311,9 @@ function App() {
 
     const [isGenerating, setIsGenerating] = useState(false);
     const [isOpeningSaveDialog, setIsOpeningSaveDialog] = useState(false);
+    const defaultDay = getNextDefault('Day', getDayrestrictDays());
+    const defaultWorker = getNextDefault('Worker', getWorkers());
+    const defaultRide = getNextDefault('Ride', getRides());
 
     // Return four EditableTable components: 
     // Ridechecks, Dayrestrict, Workers, and Rides.
@@ -329,7 +358,7 @@ function App() {
                 setRows={setDayrestrictRows}
                 header={['day', 'time till open', 'absent workers', 'closed rides']}
                 inputTypes={['text', 'number', 'subset', 'subset']}
-                defaultRow={['--day--', 100, { allset: getWorkers(), subset: [] }, { allset: getRides(), subset: [] }]}
+                defaultRow={[defaultDay, 100, { allset: getWorkers(), subset: [] }, { allset: getRides(), subset: [] }]}
             />
         </section>
         
@@ -342,7 +371,7 @@ function App() {
                 setRows={setWorkerRows}
                 header={['worker'].concat(getRides())}
                 inputTypes={['text'].concat(Array(numRides).fill('checkbox'))}
-                defaultRow={['--worker--'].concat(Array(numRides).fill(false))}
+                defaultRow={[defaultWorker].concat(Array(numRides).fill(false))}
             />
         </section>
 
@@ -355,7 +384,7 @@ function App() {
                 setRows={setRideRows}
                 header={['ride', 'time to check']}
                 inputTypes={['text', 'number']}
-                defaultRow={['--ride--', 0]}
+                defaultRow={[defaultRide, 0]}
             />
         </section>
     </>;
