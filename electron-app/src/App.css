@@ -42,7 +42,35 @@ td > input[type=checkbox]:hover {
     font-size: 14px;
     padding: 7px;
 }
- 
+
+
+/* Make the workers table have horizontal scroll */
+
+#workers-section {
+    overflow: scroll;
+}
+
+#workers-section table th:first-child, 
+#workers-section table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background-color: white;
+    outline: 1px solid blue;
+}
+
+#workers-section table th:nth-child(2), 
+#workers-section table td:nth-child(2) {
+    position: sticky;
+    left: 35px;
+    z-index: 1;
+    background-color: white;
+    outline: 1px solid blue;
+}
+
+/*************************************************/
+
+
 section > button {
     margin-top: 5px;
     margin-right: 5px;

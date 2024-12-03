@@ -363,7 +363,7 @@ function App() {
             />
         </section>
         
-        <section>
+        <section id="workers-section">
             <h1>Workers</h1>
             {/* WORKERS TABLE*/}
             <EditableTable
