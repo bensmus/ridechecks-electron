@@ -337,7 +337,7 @@ function App() {
                 if ('ridechecks' in response) {
                     setRidechecks(response.ridechecks);
                 } else if ('couldNotGenerateDays' in response) { // One or more days was impossible to generate:
-                    window.message.show(`Impossible scheduling for ${JSON.stringify(response.couldNotGenerateDays)}`);
+                    window.message.show(`Impossible scheduling for ${response.couldNotGenerateDays.join(", ")}`);
                 } else if ('error' in response) {
                     window.message.show(`Could not generate schedule: ${response.error}. Ensure form filled correctly`);
                 }
