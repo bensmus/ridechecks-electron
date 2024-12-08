@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import EditableTable from './components/EditableTable';
+import InfoMessage from './components/InfoMessage';
 import { remove } from "lodash";
 import './App.css';
 
@@ -321,7 +322,12 @@ function App() {
     return <>
         {/* RIDECHECKS TABLE */}
         <section id="ridechecks-section">
-            <h1>Ridechecks</h1>
+            <div className='table-header'>
+                <h1 className='info-output'>Ridechecks</h1>
+                <i className='info-output'> output</i>
+                <InfoMessage message={"Click on the \"Regenerate\" button to take latest inputs into account. " + 
+                    "The ridechecks table is not editable directly, rather it is generated from the inputs."}/>
+            </div>
             <EditableTable
                 mutableRowCount={false}
                 rows={getRidecheckRows()}
@@ -351,7 +357,13 @@ function App() {
         
         {/* DAYRESTRICT TABLE */}
         <section>
-            <h1>Day restrictions</h1>
+            <div className='table-header'>
+                <h1 className='info-input'>Day restrictions</h1>
+                <i className='info-input'> input</i>
+                <InfoMessage message={"Determines for which days ridechecks are generated and day-specific absent workers/closed rides. " + 
+                    "One of the three inputs that is taken into account to generate the ridechecks table." 
+                }/>
+            </div>
             <EditableTable
                 mutableRowCount={true}
                 rows={getDayrestrictRows()}
@@ -364,7 +376,13 @@ function App() {
         </section>
         
         <section id="workers-section">
-            <h1>Workers</h1>
+            <div className='table-header'>
+                <h1 className='info-input'>Workers</h1>
+                <i className='info-input'> input</i>
+                <InfoMessage message={"Determines the workers and their training. " + 
+                    "One of the three inputs that is taken into account to generate the ridechecks table. " + 
+                    "NOTE: Checkbox is clickable when red outline is visible. "}/>
+            </div>
             {/* WORKERS TABLE*/}
             <EditableTable
                 mutableRowCount={true}
@@ -378,7 +396,12 @@ function App() {
         </section>
 
         <section>
-            <h1>Rides</h1>
+            <div className='table-header'>
+                <h1 className='info-input'>Rides</h1>
+                <i className='info-input'> input</i>
+                <InfoMessage message={ "Determines the rides and how long they take to check. " + 
+                    "One of the three inputs that is taken into account to generate the ridechecks table."}/>
+            </div>
             {/* RIDE TABLE */}
             <EditableTable
                 mutableRowCount={true}

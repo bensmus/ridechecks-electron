@@ -79,9 +79,22 @@ section > button {
 h1 {
     font-size: 1.2rem;
     margin: 0; /* Removes default margins */
-    margin-bottom: 0.5rem;
 }
 
 #generate-button {
     width: 17ch; /* "regenerating..."is 15 characters */
+}
+
+.info-input {
+    color: blue;
+}
+
+.info-output {
+    color: brown;
+}
+
+.table-header {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
 }
