@@ -73,7 +73,7 @@ function Row({ row, rowUpdate, inputTypes, forceCapitalization='none' }) {
     );
 }
 
-function EditableTable({ rows, setRows, header, inputTypes, defaultRow, mutableRowCount, forceCapitalization }) {
+function EditableTable({ rows, setRows, header, inputTypes, defaultRow, mutableRowCount, forceCapitalization, addRowText = 'Add row' }) {
     function cloneRows(rows) {
         return JSON.parse(JSON.stringify(rows));
     }
@@ -94,7 +94,7 @@ function EditableTable({ rows, setRows, header, inputTypes, defaultRow, mutableR
         return <button onClick={() => {
             const newRows = [...cloneRows(rows), defaultRow];
             setRows(newRows);
-        }}>Add row</button>
+        }}>{addRowText}</button>
     }
     return (
         <>

@@ -334,6 +334,7 @@ function App() {
                 setRows={() => {}} // Will never be called.
                 header={getRidecheckHeader()}
                 inputTypes={Array(getRidecheckDays().length + 1).fill('na')}
+                addRowText='+ Ride'
             />
             <button id="generate-button" disabled={isGenerating} onClick={async () => {
                 setIsGenerating(true);
@@ -372,6 +373,7 @@ function App() {
                 inputTypes={['text', 'number', 'subset', 'subset']}
                 defaultRow={[defaultDay, 100, { allset: getWorkers(), subset: [] }, { allset: getRides(), subset: [] }]}
                 forceCapitalization="titlecase"
+                addRowText='+ Day'
             />
         </section>
         
@@ -392,6 +394,7 @@ function App() {
                 inputTypes={['text'].concat(Array(numRides).fill('checkbox'))}
                 defaultRow={[defaultWorker].concat(Array(numRides).fill(false))}
                 forceCapitalization="titlecase"
+                addRowText='+ Worker'
             />
         </section>
 
@@ -411,6 +414,7 @@ function App() {
                 inputTypes={['text', 'number']}
                 defaultRow={[defaultRide, 0]}
                 forceCapitalization="titlecase"
+                addRowText='+ Ride'
             />
         </section>
     </>;
