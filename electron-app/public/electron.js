@@ -155,5 +155,5 @@ ipcMain.on('appStateSaved', () => {
 });
 
 ipcMain.on('messageShow', (event, message) => {
-    dialog.showMessageBoxSync({message});
+    dialog.showMessageBoxSync(mainWindow, {message});
 })
