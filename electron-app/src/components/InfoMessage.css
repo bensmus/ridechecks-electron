@@ -5,11 +5,13 @@
 
 .tooltip .tooltiptext {
     visibility: hidden;
-    width: 200px;
+    width: 400px;
     background-color: black;
     color: #fff;
     border-radius: 6px;
     padding: 5px;
+
+    white-space: pre-line;
 
     position: absolute;    
     z-index: 2;

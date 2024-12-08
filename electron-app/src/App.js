@@ -325,8 +325,8 @@ function App() {
             <div className='table-header'>
                 <h1 className='info-output'>Ridechecks</h1>
                 <i className='info-output'> output</i>
-                <InfoMessage message={"Click on the \"Regenerate\" button to take latest inputs into account. " + 
-                    "The ridechecks table is not editable directly, rather it is generated from the inputs."}/>
+                <InfoMessage message={"Click on the \"Regenerate\" button to regenerate the ridechecks table, taking the latest edits of the input tables into account.\n\n" + 
+                    "The ridechecks table is not editable directly, rather it is generated from the input tables."}/>
             </div>
             <EditableTable
                 mutableRowCount={false}
@@ -360,8 +360,8 @@ function App() {
             <div className='table-header'>
                 <h1 className='info-input'>Day restrictions</h1>
                 <i className='info-input'> input</i>
-                <InfoMessage message={"Determines for which days ridechecks are generated and day-specific absent workers/closed rides. " + 
-                    "One of the three inputs that is taken into account to generate the ridechecks table." 
+                <InfoMessage message={"Determines for which days ridechecks are generated and day-specific absent workers/closed rides.\n\n" + 
+                    "One of the three input tables that is used to generate the ridechecks table." 
                 }/>
             </div>
             <EditableTable
@@ -379,8 +379,8 @@ function App() {
             <div className='table-header'>
                 <h1 className='info-input'>Workers</h1>
                 <i className='info-input'> input</i>
-                <InfoMessage message={"Determines the workers and their training. " + 
-                    "One of the three inputs that is taken into account to generate the ridechecks table. " + 
+                <InfoMessage message={"Determines the workers and which rides they're trained on.\n\n" + 
+                    "One of the three input tables that is used to generate the ridechecks table.\n\n" + 
                     "NOTE: Checkbox is clickable when red outline is visible. "}/>
             </div>
             {/* WORKERS TABLE*/}
@@ -399,8 +399,8 @@ function App() {
             <div className='table-header'>
                 <h1 className='info-input'>Rides</h1>
                 <i className='info-input'> input</i>
-                <InfoMessage message={ "Determines the rides and how long they take to check. " + 
-                    "One of the three inputs that is taken into account to generate the ridechecks table."}/>
+                <InfoMessage message={ "Determines the rides and how long they take to check.\n\n" + 
+                    "One of the three input tables that is used to generate the ridechecks table."}/>
             </div>
             {/* RIDE TABLE */}
             <EditableTable
