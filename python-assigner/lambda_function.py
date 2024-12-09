@@ -49,11 +49,11 @@ def ridecheck_generator(rides, times, workers, worker_rides, total_time):
     
     ride_domains = compute_ride_domains(rides, workers, worker_rides)
     
-    if any(map(lambda domain: domain == [], ride_domains)):
-        return False, "There exists at least one ride that no one is trained on"
-    
-    if any(map(lambda time: time > total_time, times)):
-        return False, f"There exists at least one ride that takes longer to check than {total_time}"
+    for ride, time, ride_domain in zip(rides, times, ride_domains):
+        if ride_domain == []:
+            return False, f"No one is trained on {ride}"
+        if time > total_time:
+            return False, f"{ride} takes {time} minutes to check, which is more than {total_time}"
 
     if sum(times) / len(workers) > total_time:
         return False, "The ridecheck is impossible because even with an even distribution of rides, workers would not have enough time"
