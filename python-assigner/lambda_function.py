@@ -3,7 +3,40 @@ import json
 from typing import List
 
 
-def ridecheck_generator(problem_data):
+def data_validator(rides, times, workers, workers_rides, total_time):
+    # Check rides: all elements must be nonempty strings
+    if not all(isinstance(ride, str) and ride for ride in rides):
+        return False, "Invalid rides: all elements must be nonempty strings"
+    
+    if len(set(workers)) != len(workers):
+        return False, "Invalid workers: duplicate worker name"
+    
+    if len(set(rides)) != len(rides):
+        return False, "Invalid rides: duplicate ride name"
+    
+    # Check times: all elements must be nonzero integers
+    if not all(isinstance(time, int) and time != 0 for time in times):
+        return False, "Invalid times: all elements must be nonzero integers"
+
+    # Check workers: all elements must be nonempty strings
+    if not all(isinstance(worker, str) and worker for worker in workers):
+        return False, "Invalid workers: all elements must be nonempty strings"
+
+    # Check workers_rides: must be a 2D list where each element is a list of nonempty strings
+    if not isinstance(workers_rides, list) or not all(
+        isinstance(sublist, list) and all(isinstance(wr, str) and wr for wr in sublist)
+        for sublist in workers_rides
+    ):
+        return False, "Invalid workers_rides: must be a 2D list where each inner list contains nonempty strings"
+
+    # Check total_time: must be a nonzero integer
+    if not isinstance(total_time, int) or total_time == 0:
+        return False, "Invalid total_time: must be a nonzero integer"
+
+    return True, "Valid data"
+
+
+def ridecheck_generator(rides, times, workers, worker_rides, total_time):
     def compute_ride_domains(rides, workers, workers_rides):
         ride_domains = []
         for ride in rides:
@@ -14,89 +47,93 @@ def ridecheck_generator(problem_data):
             ride_domains.append(ride_domain)
         return ride_domains
     
-    rides = list(map(lambda d: d['ride'], problem_data['rides']))
-    times = list(map(lambda d: d['time'], problem_data['rides']))
-    workers = list(map(lambda d: d['worker'], problem_data['workers']))
-    workers_rides = list(map(lambda d: d['canCheck'], problem_data['workers']))
-    total_time = problem_data['total_time']
-    ride_domains = compute_ride_domains(rides, workers, workers_rides)
+    ride_domains = compute_ride_domains(rides, workers, worker_rides)
     
-    if len(set(workers)) != len(workers):
-        raise Exception("Duplicate worker")
-    
-    if len(set(rides)) != len(rides):
-        raise Exception("Duplicate ride")
-    
-    # If domain is empty, a ridecheck is impossible.
     if any(map(lambda domain: domain == [], ride_domains)):
-        return None
+        return False, "There exists at least one ride that no one is trained on"
     
-    # If any ride takes longer to check than total_time, a ridecheck is impossible.
     if any(map(lambda time: time > total_time, times)):
-        return None
+        return False, f"There exists at least one ride that takes longer to check than {total_time}"
 
-    # If the sum of the ride times, perfectly distributed to the workers 
-    # is greater total_time, a ridecheck is impossible.
     if sum(times) / len(workers) > total_time:
-        return None
+        return False, "The ridecheck is impossible because even with an even distribution of rides, workers would not have enough time"
     
-    def assigner(
-            rides: List[str], 
-            times: List[int], 
-            ride_domains: List[List[str]], 
-            workers: List[str], 
-            total_time: int):
-        assert len(rides) == len(times) and len(rides) == len(ride_domains), 'invalid arguments'
-        problem = csp.Problem(csp.MinConflictsSolver())
-        for i, ride in enumerate(rides):
-            problem.addVariable(ride, ride_domains[i])
-        
-        def make_worker_constraint(target_worker: str):
-            # worker_constraint makes sure that the worker has enough
-            # time to check all of the rides.
-            def worker_constraint(*solution) -> bool:
-                # Solution is a list of workers, where the index tells you 
-                # which ride they check.
-                target_worker_time = 0
-                for i, worker in enumerate(solution):
-                    if worker == target_worker:
-                        ride_time = times[i]
-                        target_worker_time += ride_time
-                return target_worker_time <= total_time
-            return worker_constraint
-        
-        for target_worker in workers:
-            problem.addConstraint(make_worker_constraint(target_worker), rides)
-        return problem.getSolution()
-    return assigner(rides, times, ride_domains, workers, total_time)
+    assert len(rides) == len(times) and len(rides) == len(ride_domains), 'Front end sent malformed data, should never happen'
+    problem = csp.Problem(csp.MinConflictsSolver())
+    for i, ride in enumerate(rides):
+        problem.addVariable(ride, ride_domains[i])
+    
+    def make_worker_constraint(target_worker: str):
+        # worker_constraint makes sure that the worker has enough
+        # time to check all of the rides.
+        def worker_constraint(*solution) -> bool:
+            # Solution is a list of workers, where the index tells you 
+            # which ride they check.
+            target_worker_time = 0
+            for i, worker in enumerate(solution):
+                if worker == target_worker:
+                    ride_time = times[i]
+                    target_worker_time += ride_time
+            return target_worker_time <= total_time
+        return worker_constraint
+    
+    for target_worker in workers:
+        problem.addConstraint(make_worker_constraint(target_worker), rides)
+    
+    solution = problem.getSolution()
+    if solution:
+        return True, solution
+    return False, "The ridecheck is probably impossible, maybe more workers should come in or some rides should be closed"
+
+
+def response(code, status, result):
+    return {
+            "statusCode": code,
+            "headers": {
+                "Content-Type": "application/json"
+            },
+            "body": json.dumps({'status': status, 'result': result})
+        }
 
 
 def lambda_handler(event, context):
     try:
+        status = 'unexpected error'
+        result = None
+        
         # Parse JSON from the HTTP request body.
         # Note: event and body are plain Python dictionaries.
         problem_data = json.loads(event.get("body", "{}"))
-
+        
         # Ensure that all of the necessary data is provided to generate ridechecks:
         missing_keys = [key for key in ["rides", "workers", "total_time"] if key not in problem_data]
         if missing_keys:
-            raise ValueError(f"Missing required keys: {', '.join(missing_keys)}")
-    
-        ridecheck = ridecheck_generator(problem_data)
+            status = 'invalid data'
+            result = 'missing required keys'
+            return response(200, status, result)
 
-        # Construct the response
-        return {
-            "statusCode": 200,
-            "headers": {
-                "Content-Type": "application/json"
-            },
-            "body": json.dumps({'success': True, 'ridecheck': ridecheck})
-        }
+        rides = list(map(lambda d: d['ride'], problem_data['rides']))
+        times = list(map(lambda d: d['time'], problem_data['rides']))
+        workers = list(map(lambda d: d['worker'], problem_data['workers']))
+        workers_rides = list(map(lambda d: d['canCheck'], problem_data['workers']))
+        total_time = problem_data['total_time']
+        
+        valid_data, validator_message = data_validator(rides, times, workers, workers_rides, total_time)
+        
+        if not valid_data:
+            status = 'invalid data'
+            result = validator_message
+            return response(200, status, result)
+        
+        did_generate, generator_output = ridecheck_generator(rides, times, workers, workers_rides, total_time)
+        if not did_generate:
+            status = 'could not generate'
+            result = generator_output
+            return response(200, status, result)
+        else:
+            status = 'did generate'
+            result = generator_output
+            return response(200, status, result)
+        
     except Exception as e:
-        return {
-            "statusCode": 400,
-            "headers": {
-                "Content-Type": "application/json"
-            },
-            "body": json.dumps({'success': False, "error": str(e)})
-        }
+        return response(400, 'unexpected error', str(e))

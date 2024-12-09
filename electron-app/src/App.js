@@ -90,6 +90,7 @@ async function fetchRidecheck(problemData) {
     return json;
 }
 
+// Returns either a string (error string) or ridechecks, which is an array of objects.
 async function fetchAllRidechecks(appState) {
     const days = appState.dayrestrict.map(obj => obj.day);
     const promises = days.map(day => {
@@ -98,24 +99,22 @@ async function fetchAllRidechecks(appState) {
     });
     const jsonArray = await Promise.all(promises);
     console.log(jsonArray);
+
     const ridechecks = [];
-    const couldNotGenerateDays = [];
+    const couldNotGenerate = [];
+    const invalidData = [];
+    const unexpectedError = [];
+
     for (let index = 0; index < jsonArray.length; index++) {
-        const json = jsonArray[index];
-        if (json.success === false) {
-            return {error: json.error};
+        const {status, result} = jsonArray[index];
+        const day = days[index]
+        if (status == 'did generate') {
+            ridechecks.push({day, result})
         }
-        const day = days[index];
-        if (json.ridecheck === null) {
-            couldNotGenerateDays.push(day);
-        }
-        ridechecks.push({day: day, ridecheck: json.ridecheck});
+        // TODO fill in the arrays
     }
-    if (couldNotGenerateDays.length !== 0) {
-        return {couldNotGenerateDays};
-    } else {
-        return {ridechecks};
-    }
+    // TODO priority check the arrays (unexpectedError -> invalidData -> couldNotGenerate), and 
+    // return appropriate error string or ridechecks.
 }
 
 // findTrailingNumber("test", "test123")) === 123.
@@ -340,6 +339,7 @@ function App() {
                 const response = await fetchAllRidechecks(appState);
                 setIsGenerating(false);
                 console.log(response)
+                // FIXME 
                 if ('ridechecks' in response) {
                     setRidechecks(response.ridechecks);
                 } else if ('couldNotGenerateDays' in response) { // One or more days was impossible to generate:
@@ -411,7 +411,7 @@ function App() {
                 setRows={setRideRows}
                 header={['Ride', 'Time to check']}
                 inputTypes={['text', 'number']}
-                defaultRow={[defaultRide, 0]}
+                defaultRow={[defaultRide, 10]}
                 forceCapitalization="titlecase"
                 addRowText='+ Ride'
             />
