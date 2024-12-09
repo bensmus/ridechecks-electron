@@ -115,31 +115,31 @@ async function fetchAllRidechecks(appState) {
     for (let index = 0; index < jsonArray.length; index++) {
         const {status, result} = jsonArray[index];
         const day = days[index]
-        if (status == 'did generate') {
+        if (status === 'did generate') {
             ridechecks.push({day, ridecheck: result})
-        } else if (status == 'invalid data') {
+        } else if (status === 'invalid data') {
             invalidDataErrors.push({day, error: result})
-        } else if (status == 'could not generate') {
+        } else if (status === 'could not generate') {
             couldNotGenerateErrors.push({day, error: result})
-        } else if (status == 'unexpected error') {
+        } else if (status === 'unexpected error') {
             unexpectedErrors.push({day, error: result})
         } else {
             throw new Error(`api error - status ${status} is not valid - this code should be unreachable`);
         }
     }
 
-    if (ridechecks.length == days.length) { // No generation issues:
+    if (ridechecks.length === days.length) { // No generation issues:
         return ridechecks;
     }
 
     // Priority check the arrays (unexpectedErrors -> invalidDataErrors -> couldNotGenerateErrors), and return appropriate error string.
-    if (unexpectedErrors.length != 0) {
+    if (unexpectedErrors.length !== 0) {
         return "Generating ridechecks for the following days produced unexpected errors:\n" + getErrorString(unexpectedErrors);
     }
-    if (invalidDataErrors.length != 0) {
+    if (invalidDataErrors.length !== 0) {
         return "Invalid data for the following days:\n" + getErrorString(invalidDataErrors);
     }
-    if (couldNotGenerateErrors.length != 0) {
+    if (couldNotGenerateErrors.length !== 0) {
         return "Could not generate ridechecks for the following days:\n" + getErrorString(couldNotGenerateErrors);
     }
     throw new Error("logic error - this code should be unreachable");
@@ -380,7 +380,7 @@ function App() {
                 await window.ridechecksSave.ridechecksSave(getCsvString(getRidecheckHeader(), getRidecheckRows()));
                 setIsOpeningSaveDialog(false);
             }}>{isOpeningSaveDialog ? "Working..." : "Save ridechecks CSV"}</button>
-            <div><span>Ridecheck status:</span><span>{ridecheckStatus == ridecheckStatusOk ? "✅" : "❌"}</span></div>
+            <div><span>Ridecheck status:</span><span>{ridecheckStatus === ridecheckStatusOk ? "✅" : "❌"}</span></div>
             <div style={{'whiteSpace': 'pre-line'}}>{ridecheckStatus}</div>
         </section>
         
