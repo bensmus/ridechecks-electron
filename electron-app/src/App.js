@@ -100,9 +100,17 @@ async function fetchAllRidechecks(appState) {
     const jsonArray = await Promise.all(promises);
 
     const ridechecks = [];
-    const invalidData = [];
-    const couldNotGenerate = [];
-    const unexpectedError = [];
+    const invalidDataErrors = [];
+    const couldNotGenerateErrors = [];
+    const unexpectedErrors = [];
+
+    function getErrorString(errors) {
+        let errorString = '';
+        for (const {day, error} of errors) {
+            errorString += `${day}: ${error}\n`;
+        }
+        return errorString;
+    }
 
     for (let index = 0; index < jsonArray.length; index++) {
         const {status, result} = jsonArray[index];
@@ -110,11 +118,11 @@ async function fetchAllRidechecks(appState) {
         if (status == 'did generate') {
             ridechecks.push({day, ridecheck: result})
         } else if (status == 'invalid data') {
-            invalidData.push({day, error: result})
+            invalidDataErrors.push({day, error: result})
         } else if (status == 'could not generate') {
-            couldNotGenerate.push({day, error: result})
+            couldNotGenerateErrors.push({day, error: result})
         } else if (status == 'unexpected error') {
-            unexpectedError.push({day, error: result})
+            unexpectedErrors.push({day, error: result})
         } else {
             throw new Error(`api error - status ${status} is not valid - this code should be unreachable`);
         }
@@ -124,15 +132,15 @@ async function fetchAllRidechecks(appState) {
         return ridechecks;
     }
 
-    // Priority check the arrays (unexpectedError -> invalidData -> couldNotGenerate), and return appropriate error string.
-    if (unexpectedError.length != 0) {
-        return "Unexpected error:\n" + JSON.stringify(unexpectedError); // FIXME replace json stringify with better newlined error explanation.
+    // Priority check the arrays (unexpectedErrors -> invalidDataErrors -> couldNotGenerateErrors), and return appropriate error string.
+    if (unexpectedErrors.length != 0) {
+        return "Generating ridechecks for the following days produced unexpected errors:\n" + getErrorString(unexpectedErrors);
     }
-    if (invalidData.length != 0) {
-        return "Invalid data:\n" + JSON.stringify(invalidData);
+    if (invalidDataErrors.length != 0) {
+        return "Invalid data for the following days:\n" + getErrorString(invalidDataErrors);
     }
-    if (couldNotGenerate.length != 0) {
-        return "Could not generate:\n" + JSON.stringify(couldNotGenerate);
+    if (couldNotGenerateErrors.length != 0) {
+        return "Could not generate ridechecks for the following days:\n" + getErrorString(couldNotGenerateErrors);
     }
     throw new Error("logic error - this code should be unreachable");
 }
@@ -329,6 +337,8 @@ function App() {
 
     const [isGenerating, setIsGenerating] = useState(false);
     const [isOpeningSaveDialog, setIsOpeningSaveDialog] = useState(false);
+    const ridecheckStatusOk = 'All ridechecks generated successfully';
+    const [ridecheckStatus, setRidecheckStatus] = useState(ridecheckStatusOk);
     const defaultDay = getNextDefault('Day', getDayrestrictDays());
     const defaultWorker = getNextDefault('Worker', getWorkers());
     const defaultRide = getNextDefault('Ride', getRides());
@@ -359,9 +369,10 @@ function App() {
                 setIsGenerating(false);
                 console.log(response)
                 if (typeof response === 'string') { // Response is an error message:
-                    window.message.show(response);
+                    setRidecheckStatus(response);
                 } else { // Response is ridechecks:
                     setRidechecks(response);
+                    setRidecheckStatus(ridecheckStatusOk);
                 }
             }}>{isGenerating ? "Regenerating..." : "Regenerate"}</button>
             <button disabled={isOpeningSaveDialog} onClick={async () => {
@@ -369,6 +380,8 @@ function App() {
                 await window.ridechecksSave.ridechecksSave(getCsvString(getRidecheckHeader(), getRidecheckRows()));
                 setIsOpeningSaveDialog(false);
             }}>{isOpeningSaveDialog ? "Working..." : "Save ridechecks CSV"}</button>
+            <div><span>Ridecheck status:</span><span>{ridecheckStatus == ridecheckStatusOk ? "✅" : "❌"}</span></div>
+            <div style={{'whiteSpace': 'pre-line'}}>{ridecheckStatus}</div>
         </section>
         
         {/* DAYRESTRICT TABLE */}
@@ -384,7 +397,7 @@ function App() {
                 mutableRowCount={true}
                 rows={getDayrestrictRows()}
                 setRows={setDayrestrictRows}
-                header={['Day', 'Time till open', 'Absent workers', 'Closed rides']}
+                header={['Day', 'Time till opening', 'Absent workers', 'Closed rides']}
                 inputTypes={['text', 'number', 'subset', 'subset']}
                 defaultRow={[defaultDay, 100, { allset: getWorkers(), subset: [] }, { allset: getRides(), subset: [] }]}
                 forceCapitalization="titlecase"

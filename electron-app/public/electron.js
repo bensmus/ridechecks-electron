@@ -153,7 +153,3 @@ ipcMain.on('appStateSaved', () => {
     mainWindow.destroy();
     app.quit();
 });
-
-ipcMain.on('messageShow', (event, message) => {
-    dialog.showMessageBoxSync(mainWindow, {message});
-})

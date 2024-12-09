@@ -6,7 +6,7 @@ from typing import List
 def data_validator(rides, times, workers, workers_rides, total_time):
     # Check rides: all elements must be nonempty strings
     if not all(isinstance(ride, str) and ride for ride in rides):
-        return False, "Invalid rides: all elements must be nonempty strings"
+        return False, "Invalid rides: all rides must have a name"
     
     if len(set(workers)) != len(workers):
         return False, "Invalid workers: duplicate worker name"
@@ -16,11 +16,11 @@ def data_validator(rides, times, workers, workers_rides, total_time):
     
     # Check times: all elements must be nonzero integers
     if not all(isinstance(time, int) and time != 0 for time in times):
-        return False, "Invalid times: all elements must be nonzero integers"
+        return False, "Invalid ride time: checking ride must take more than 0 minutes"
 
     # Check workers: all elements must be nonempty strings
     if not all(isinstance(worker, str) and worker for worker in workers):
-        return False, "Invalid workers: all elements must be nonempty strings"
+        return False, "Invalid workers: all workers must have a name"
 
     # Check workers_rides: must be a 2D list where each element is a list of nonempty strings
     if not isinstance(workers_rides, list) or not all(
@@ -31,7 +31,7 @@ def data_validator(rides, times, workers, workers_rides, total_time):
 
     # Check total_time: must be a nonzero integer
     if not isinstance(total_time, int) or total_time == 0:
-        return False, "Invalid total_time: must be a nonzero integer"
+        return False, "Invalid time till opening: it must be more than 0 minutes"
 
     return True, "Valid data"
 

@@ -25,7 +25,4 @@ process.once("loaded", () => {
     contextBridge.exposeInMainWorld('electronListener', {
         appStateSaveRequest: (callback) => ipcRenderer.on('appStateSaveRequest', callback)
     });
-    contextBridge.exposeInMainWorld('message', {
-        show: (message) => ipcRenderer.send('messageShow', message)
-    })
 });
