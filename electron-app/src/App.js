@@ -98,23 +98,43 @@ async function fetchAllRidechecks(appState) {
         return fetchRidecheck(problemData);
     });
     const jsonArray = await Promise.all(promises);
-    console.log(jsonArray);
 
     const ridechecks = [];
-    const couldNotGenerate = [];
     const invalidData = [];
+    const couldNotGenerate = [];
     const unexpectedError = [];
 
     for (let index = 0; index < jsonArray.length; index++) {
         const {status, result} = jsonArray[index];
         const day = days[index]
         if (status == 'did generate') {
-            ridechecks.push({day, result})
+            ridechecks.push({day, ridecheck: result})
+        } else if (status == 'invalid data') {
+            invalidData.push({day, error: result})
+        } else if (status == 'could not generate') {
+            couldNotGenerate.push({day, error: result})
+        } else if (status == 'unexpected error') {
+            unexpectedError.push({day, error: result})
+        } else {
+            throw new Error(`api error - status ${status} is not valid - this code should be unreachable`);
         }
-        // TODO fill in the arrays
     }
-    // TODO priority check the arrays (unexpectedError -> invalidData -> couldNotGenerate), and 
-    // return appropriate error string or ridechecks.
+
+    if (ridechecks.length == days.length) { // No generation issues:
+        return ridechecks;
+    }
+
+    // Priority check the arrays (unexpectedError -> invalidData -> couldNotGenerate), and return appropriate error string.
+    if (unexpectedError.length != 0) {
+        return "Unexpected error:\n" + JSON.stringify(unexpectedError); // FIXME replace json stringify with better newlined error explanation.
+    }
+    if (invalidData.length != 0) {
+        return "Invalid data:\n" + JSON.stringify(invalidData);
+    }
+    if (couldNotGenerate.length != 0) {
+        return "Could not generate:\n" + JSON.stringify(couldNotGenerate);
+    }
+    throw new Error("logic error - this code should be unreachable");
 }
 
 // findTrailingNumber("test", "test123")) === 123.
@@ -130,7 +150,6 @@ function getNextDefault(defaultBase, strings) {
     let maxNum = 0;
     for (const string of strings) {
         const stringNum = findTrailingNumber(defaultBase, string);
-        console.log(stringNum);
         if (stringNum) {
             maxNum = Math.max(maxNum, stringNum);
         }
@@ -339,13 +358,10 @@ function App() {
                 const response = await fetchAllRidechecks(appState);
                 setIsGenerating(false);
                 console.log(response)
-                // FIXME 
-                if ('ridechecks' in response) {
-                    setRidechecks(response.ridechecks);
-                } else if ('couldNotGenerateDays' in response) { // One or more days was impossible to generate:
-                    window.message.show(`Impossible scheduling for ${response.couldNotGenerateDays.join(", ")}`);
-                } else if ('error' in response) {
-                    window.message.show(`Could not generate schedule: ${response.error}. Ensure form filled correctly`);
+                if (typeof response === 'string') { // Response is an error message:
+                    window.message.show(response);
+                } else { // Response is ridechecks:
+                    setRidechecks(response);
                 }
             }}>{isGenerating ? "Regenerating..." : "Regenerate"}</button>
             <button disabled={isOpeningSaveDialog} onClick={async () => {
