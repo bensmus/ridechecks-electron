@@ -351,7 +351,6 @@ function App() {
         <section id="ridechecks-section">
             <div className='table-header'>
                 <h1 className='info-output'>Ridechecks</h1>
-                <i className='info-output'> output</i>
                 <InfoMessage message={"Click on the \"Regenerate\" button to regenerate the ridechecks table, taking the latest edits of the input tables into account.\n\n" + 
                     "The ridechecks table is not editable directly, rather it is generated from the input tables."}/>
             </div>
@@ -380,7 +379,7 @@ function App() {
                 await window.ridechecksSave.ridechecksSave(getCsvString(getRidecheckHeader(), getRidecheckRows()));
                 setIsOpeningSaveDialog(false);
             }}>{isOpeningSaveDialog ? "Working..." : "Save ridechecks CSV"}</button>
-            <div><span>Ridecheck status:</span><span>{ridecheckStatus === ridecheckStatusOk ? "✅" : "❌"}</span></div>
+            <div><span>Ridecheck status:</span><span>{ridecheckStatus === ridecheckStatusOk ? "🆗" : "❌"}</span></div>
             <div style={{'whiteSpace': 'pre-line'}}>{ridecheckStatus}</div>
         </section>
         
@@ -388,7 +387,6 @@ function App() {
         <section>
             <div className='table-header'>
                 <h1 className='info-input'>Day restrictions</h1>
-                <i className='info-input'> input</i>
                 <InfoMessage message={"Determines for which days ridechecks are generated and day-specific absent workers/closed rides.\n\n" + 
                     "One of the three input tables that is used to generate the ridechecks table." 
                 }/>
@@ -397,7 +395,7 @@ function App() {
                 mutableRowCount={true}
                 rows={getDayrestrictRows()}
                 setRows={setDayrestrictRows}
-                header={['Day', 'Time till opening', 'Absent workers', 'Closed rides']}
+                header={['Day', 'Time till opening (mins)', 'Absent workers', 'Closed rides']}
                 inputTypes={['text', 'number', 'subset', 'subset']}
                 defaultRow={[defaultDay, 100, { allset: getWorkers(), subset: [] }, { allset: getRides(), subset: [] }]}
                 forceCapitalization="titlecase"
@@ -408,10 +406,9 @@ function App() {
         <section id="workers-section">
             <div className='table-header'>
                 <h1 className='info-input'>Workers</h1>
-                <i className='info-input'> input</i>
                 <InfoMessage message={"Determines the workers and which rides they're trained on.\n\n" + 
                     "One of the three input tables that is used to generate the ridechecks table.\n\n" + 
-                    "NOTE: Checkbox is clickable when red outline is visible. "}/>
+                    "NOTE: Checkbox is clickable when blue outline is visible. "}/>
             </div>
             {/* WORKERS TABLE*/}
             <EditableTable
@@ -429,7 +426,6 @@ function App() {
         <section>
             <div className='table-header'>
                 <h1 className='info-input'>Rides</h1>
-                <i className='info-input'> input</i>
                 <InfoMessage message={ "Determines the rides and how long they take to check.\n\n" + 
                     "One of the three input tables that is used to generate the ridechecks table."}/>
             </div>
@@ -438,7 +434,7 @@ function App() {
                 mutableRowCount={true}
                 rows={getRideRows()}
                 setRows={setRideRows}
-                header={['Ride', 'Time to check']}
+                header={['Ride', 'Time to check (mins)']}
                 inputTypes={['text', 'number']}
                 defaultRow={[defaultRide, 10]}
                 forceCapitalization="titlecase"

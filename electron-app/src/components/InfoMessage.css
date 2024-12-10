@@ -29,7 +29,3 @@
 .tooltip:hover .tooltiptext {
     visibility: visible;
 }
-
-.tooltip:hover {
-    outline: 2px solid red;
-}

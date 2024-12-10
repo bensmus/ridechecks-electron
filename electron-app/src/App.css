@@ -32,10 +32,11 @@ td > input, td > button {
 
 td > input[type=checkbox] {
     width: 100%; /* Make checkbox easy to click */
+    height: 20px;
 }
 
 td > input[type=checkbox]:hover {
-    outline: 2px solid red; /* Easy to see if checkbox is clickable */
+    outline: 2px solid lightblue; /* Easy to see if checkbox is clickable */
 }
 
 #ridechecks-section td {
@@ -83,6 +84,9 @@ h1 {
 
 #generate-button {
     width: 17ch; /* "regenerating..."is 15 characters */
+    height: 7ch;
+    font-size: medium;
+    background-color: lightgreen;
 }
 
 .info-input {
@@ -90,7 +94,7 @@ h1 {
 }
 
 .info-output {
-    color: brown;
+    color: green;
 }
 
 .table-header {
