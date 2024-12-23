@@ -189,6 +189,9 @@ function App() {
 
         loadAppState();
 
+        // TODO - try it with just saving on every change, 
+        // will make this unnecessary... but what if X is hit during a save?
+        // Might need to keep some of stuff.
         // Define callback for appStateSaveRequest, which is fired by the
         // main process when the window 'X' button is hit.
         window.electronListener.appStateSaveRequest(async () => {
