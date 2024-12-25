@@ -7,21 +7,14 @@
 // It has the same sandbox as a Chrome extension.
 const { contextBridge, ipcRenderer } = require("electron");
 
-// As an example, here we use the exposeInMainWorld API to expose the browsers
-// and node versions to the main window.
-// They'll be accessible at "window.versions".
 process.once("loaded", () => {
     console.log('preload.js loaded')
     contextBridge.exposeInMainWorld('appState', {
         // relpath is relative to app.getPath('userData')
         store: (state) => ipcRenderer.invoke('appStateStore', state),
         load: (defaultState) => ipcRenderer.invoke('appStateLoad', defaultState),
-        close: () => ipcRenderer.send('closeApp') // send with on, invoke with handle.
     });
     contextBridge.exposeInMainWorld('ridechecksSave', {
         ridechecksSave: (ridechecks) => ipcRenderer.invoke('ridechecksSave', ridechecks)
-    });
-    contextBridge.exposeInMainWorld('electronListener', {
-        appStateSaveRequest: (callback) => ipcRenderer.on('appStateSaveRequest', callback)
     });
 });

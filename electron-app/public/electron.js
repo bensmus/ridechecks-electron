@@ -10,20 +10,6 @@ const userData = app.getPath('userData');
 
 let mainWindow;
 
-function getDefaultName() {
-    const now = new Date();
-    
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-    const date = String(now.getDate()).padStart(2, '0');
-    
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
-    
-    return `ridechecks-day-${year}-${month}-${date}-time-${hours}-${minutes}-${seconds}`;
-};
-
 // Create the native browser window.
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -52,11 +38,6 @@ function createWindow() {
     if (!app.isPackaged) {
         mainWindow.webContents.openDevTools();
     }
-    
-    mainWindow.on('close', (event) => {
-        event.preventDefault();
-        mainWindow.webContents.send('appStateSaveRequest');
-    })
 }
 
 // Setup a local proxy to adjust the paths of requested files when loading
@@ -138,8 +119,22 @@ ipcMain.handle('appStateLoad', async (event, defaultState) => {
 });
 
 ipcMain.handle('ridechecksSave', async (event, ridechecks) => {
+    function getDefaultCsvPath() {
+        const now = new Date();
+        
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+        const date = String(now.getDate()).padStart(2, '0');
+        
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        
+        return `ridechecks-day-${year}-${month}-${date}-time-${hours}-${minutes}-${seconds}.csv`;
+    };
+    
     const options = {
-        defaultPath: `${getDefaultName()}.csv`,
+        defaultPath: getDefaultCsvPath(),
         filters: [
             { name: 'CSV Files', extensions: ['csv'] },
             { name: 'All Files', extensions: ['*'] }
@@ -150,10 +145,3 @@ ipcMain.handle('ridechecksSave', async (event, ridechecks) => {
         fs.writeFileSync(filePath, ridechecks);
     }
 })
-
-// Listen for cleanup completion from renderer.
-// '.on' is used instead of '.handle' because we don't need the renderer to get a response.
-ipcMain.on('closeApp', () => {
-    mainWindow.destroy();
-    app.quit();
-});

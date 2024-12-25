@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import EditableTable from './components/EditableTable';
 import InfoMessage from './components/InfoMessage';
 import { remove } from "lodash";
@@ -182,14 +182,8 @@ function App() {
     const [appState, setAppState] = useState(defaultAppState);
     const [appStateLoaded, setAppStateLoaded] = useState(false);
 
-    // Set up an object whose `current` property always tracks appState.
-    const appStateRef = useRef(appState);
-    useEffect(() => {
-        appStateRef.current = appState;
-    });
-
-    async function saveApp() {
-        const appStateString = JSON.stringify(appStateRef.current);
+    async function saveApp(appState) {
+        const appStateString = JSON.stringify(appState);
         const {success, error} = await window.appState.store(appStateString);
         if (!success) {
             console.log(error)
@@ -200,7 +194,7 @@ function App() {
         // Don't save state on first render,
         // instead allow the app to load the state that was previously saved.
         if (appStateLoaded) {
-            saveApp();
+            saveApp(appState);
         }
         console.log("saving")
     }, [appState, appStateLoaded])
@@ -219,18 +213,6 @@ function App() {
         }
 
         loadAppState();
-
-        // Define callback for appStateSaveRequest, which is fired by the
-        // main process when the window 'X' button is hit.
-        window.electronListener.appStateSaveRequest(async () => {
-            await saveApp();
-            window.appState.close(); // Let main process know save was completed.
-        });
-
-        // Cleanup listener.
-        return () => {
-            window.electronListener.appStateSaveRequest(() => {});
-        }
     }, [])
 
     function cloneAppState() {
