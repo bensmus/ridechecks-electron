@@ -168,12 +168,30 @@ function getNextDefault(defaultBase, strings) {
 
 function App() {
     const [appState, setAppState] = useState(defaultAppState);
+    const [appStateLoaded, setAppStateLoaded] = useState(false);
 
     // Set up an object whose .current always tracks appState (useEffect with no deps array).
     const appStateRef = useRef(appState);
     useEffect(() => {
         appStateRef.current = appState;
     });
+
+    async function saveApp() {
+        const appStateString = JSON.stringify(appStateRef.current);
+        const {success, error} = await window.appState.store(appStateString);
+        if (!success) {
+            console.log(error)
+        }
+    }
+
+    useEffect(() => {
+        // Don't save state on first render,
+        // instead allow the app to load the state that was previously saved.
+        if (appStateLoaded) {
+            saveApp();
+        }
+        console.log("saving")
+    }, [appState, appStateLoaded])
 
     // https://stackoverflow.com/questions/66993812/usestate-vs-useeffect-setting-initial-value
     useEffect(() => { // useEffect runs after first render.
@@ -185,19 +203,16 @@ function App() {
                 console.error('cannot load application state')
             }
             setAppState(JSON.parse(appStateString));
+            setAppStateLoaded(true)
         }
 
         loadAppState();
 
-        // TODO - try it with just saving on every change, 
-        // will make this unnecessary... but what if X is hit during a save?
-        // Might need to keep some of stuff.
         // Define callback for appStateSaveRequest, which is fired by the
         // main process when the window 'X' button is hit.
         window.electronListener.appStateSaveRequest(async () => {
-            const appStateString = JSON.stringify(appStateRef.current);
-            await window.appState.store(appStateString);
-            window.appState.isSaved(); // Let main process know save was completed.
+            await saveApp();
+            window.appState.close(); // Let main process know save was completed.
         });
 
         // Cleanup listener.

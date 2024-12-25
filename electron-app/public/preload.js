@@ -16,12 +16,11 @@ process.once("loaded", () => {
         // relpath is relative to app.getPath('userData')
         store: (state) => ipcRenderer.invoke('appStateStore', state),
         load: (defaultState) => ipcRenderer.invoke('appStateLoad', defaultState),
-        isSaved: () => ipcRenderer.send('appStateSaved') // send with on, invoke with handle.
+        close: () => ipcRenderer.send('closeApp') // send with on, invoke with handle.
     });
     contextBridge.exposeInMainWorld('ridechecksSave', {
         ridechecksSave: (ridechecks) => ipcRenderer.invoke('ridechecksSave', ridechecks)
     });
-    contextBridge.exposeInMainWorld('appStateSaved', )
     contextBridge.exposeInMainWorld('electronListener', {
         appStateSaveRequest: (callback) => ipcRenderer.on('appStateSaveRequest', callback)
     });

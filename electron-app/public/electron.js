@@ -111,7 +111,9 @@ app.on("web-contents-created", (event, contents) => {
 
 ipcMain.handle('appStateStore', async (event, appState) => {
     try {
-        fs.writeFileSync(path.join(userData, 'state.json'), appState);
+        const filePath = path.join(userData, 'state.json');
+        console.log(`App state store to ${filePath}`);
+        fs.writeFileSync(filePath, appState);
         return { success: true };
     } catch (err) {
         console.error('Error writing file:', err);
@@ -122,7 +124,9 @@ ipcMain.handle('appStateStore', async (event, appState) => {
 ipcMain.handle('appStateLoad', async (event, defaultState) => {
     try {
         const filePath = path.join(userData, 'state.json');
+        console.log(`App state load from ${filePath}`);
         if (!fs.existsSync(filePath)) { // First time app is opened on computer.
+            console.log("Loading default state");
             fs.writeFileSync(filePath, defaultState, 'utf-8');
         }
         const appStateString = fs.readFileSync(filePath, 'utf-8');
@@ -149,7 +153,7 @@ ipcMain.handle('ridechecksSave', async (event, ridechecks) => {
 
 // Listen for cleanup completion from renderer.
 // '.on' is used instead of '.handle' because we don't need the renderer to get a response.
-ipcMain.on('appStateSaved', () => {
+ipcMain.on('closeApp', () => {
     mainWindow.destroy();
     app.quit();
 });
