@@ -55,14 +55,16 @@ const defaultAppState = {
     ]
 };
 
-function getCsvString(headerArray, twoDimRowArray) {
-    let csvString = headerArray.join(",") + "\n";
-    csvString += twoDimRowArray.map(row => row.join(",")).join("\n");
+// Turn header and rows into a string that can be written to a CSV file.
+function getCsvString(header, rows) {
+    let csvString = header.join(",") + "\n";
+    csvString += rows.map(row => row.join(",")).join("\n");
     return csvString;
 }
 
 // Ridecheck generation is done for a certain day,
-// and we need to filter out closedRides and absentWorkers.
+// and we need to filter out closedRides and absentWorkers,
+// i.e. apply the day restrictions.
 function applyDayRestrict(appState, day) {
     const {time, closedRides, absentWorkers} = appState.dayrestrict.find(obj => obj.day === day);
     const problemData = {
@@ -74,7 +76,8 @@ function applyDayRestrict(appState, day) {
     return problemData;
 }
 
-// problemData is for one specific day, as is a ridecheck.
+// `problemData` is for one specific day, as is a ridecheck.
+// Called multiple times in fetchAllRidechecks.
 async function fetchRidecheck(problemData) {
     // Needed to set Access-Control-Allow-Origin to * in AWS console in order to make this work.
     const url = "https://grhg6g6d90.execute-api.us-west-2.amazonaws.com/ridecheck_generator";
@@ -90,13 +93,23 @@ async function fetchRidecheck(problemData) {
     return json;
 }
 
-// Returns either a string (error string) or ridechecks, which is an array of objects.
+// Returns either an error string or ridechecks, which is {day: "...", ridecheck: {...} }[].
 async function fetchAllRidechecks(appState) {
     const days = appState.dayrestrict.map(obj => obj.day);
     const promises = days.map(day => {
         const problemData = applyDayRestrict(appState, day);
         return fetchRidecheck(problemData);
     });
+    
+    /**
+     * Each promise resolves to a {status: ..., result: ...} object.
+     * Status is a string that is either 
+     *  'did generate' OR 
+     *   one of three possible error strings.
+     * Result is either 
+     *   the ridechecks result OR
+     *   a string that explains the error in more detail. 
+     */
     const jsonArray = await Promise.all(promises);
 
     const ridechecks = [];
@@ -124,7 +137,7 @@ async function fetchAllRidechecks(appState) {
         } else if (status === 'unexpected error') {
             unexpectedErrors.push({day, error: result})
         } else {
-            throw new Error(`api error - status ${status} is not valid - this code should be unreachable`);
+            throw new Error(`api error - status ${status} is not valid - this code should never be reached`);
         }
     }
 
@@ -142,19 +155,18 @@ async function fetchAllRidechecks(appState) {
     if (couldNotGenerateErrors.length !== 0) {
         return "Could not generate ridechecks for the following days:\n" + getErrorString(couldNotGenerateErrors);
     }
-    throw new Error("logic error - this code should be unreachable");
-}
-
-// findTrailingNumber("test", "test123")) === 123.
-function findTrailingNumber(baseText, searchString) {
-    const pattern = new RegExp(`^${baseText}(\\d+)$`);
-    const match = searchString.match(pattern);
-    return match ? parseInt(match[1], 10) : null;
+    throw new Error("critical API failure - this code should never be reached");
 }
 
 // Used for auto-incrementing worker/ride/day names when "add row" button is clicked
 // in the EditableTable component. E.g. "Worker1", "Worker2", "Worker3", ... ,"Worker15".
 function getNextDefault(defaultBase, strings) {
+    // findTrailingNumber("test", "test123")) === 123.
+    function findTrailingNumber(baseText, searchString) {
+        const pattern = new RegExp(`^${baseText}(\\d+)$`);
+        const match = searchString.match(pattern);
+        return match ? parseInt(match[1], 10) : null;
+    }
     let maxNum = 0;
     for (const string of strings) {
         const stringNum = findTrailingNumber(defaultBase, string);
@@ -170,7 +182,7 @@ function App() {
     const [appState, setAppState] = useState(defaultAppState);
     const [appStateLoaded, setAppStateLoaded] = useState(false);
 
-    // Set up an object whose .current always tracks appState (useEffect with no deps array).
+    // Set up an object whose `current` property always tracks appState.
     const appStateRef = useRef(appState);
     useEffect(() => {
         appStateRef.current = appState;
