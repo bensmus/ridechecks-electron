@@ -187,6 +187,25 @@ function App() {
     const ridecheckHeader = asu.getRidecheckHeader(appState)
     const ridecheckDays = asu.getRidecheckDays(appState);
 
+    async function handleGenerateRidechecks() {
+        setIsGenerating(true);
+        const response = await fetchAllRidechecks(appState);
+        setIsGenerating(false);
+        console.log(response)
+        if (typeof response === 'string') { // Response is an error message:
+            setRidecheckGenMessage(response);
+        } else { // Response is ridechecks:
+            asu.setRidechecks(response, setAppState);
+            setRidecheckGenMessage(ridecheckGenSuccess);
+        }
+    }
+
+    async function handleSaveRidechecks() {
+        setIsOpeningSaveDialog(true);
+        await window.ridechecksSave.ridechecksSave(getCsvString(ridecheckHeader, ridecheckRows));
+        setIsOpeningSaveDialog(false);
+    }
+
     // Return four EditableTable components: 
     // Ridechecks, Dayrestrict, Workers, and Rides.
     // Ridechecks is not user editable.
@@ -206,23 +225,10 @@ function App() {
                 header={ridecheckHeader}
                 inputTypes={Array(ridecheckDays.length + 1).fill('na')} // na: not applicable i.e. not editable.
             />
-            <button id="generate-button" disabled={isGenerating} onClick={async () => { // FIXME
-                setIsGenerating(true);
-                const response = await fetchAllRidechecks(appState);
-                setIsGenerating(false);
-                console.log(response)
-                if (typeof response === 'string') { // Response is an error message:
-                    setRidecheckGenMessage(response);
-                } else { // Response is ridechecks:
-                    asu.setRidechecks(response, setAppState);
-                    setRidecheckGenMessage(ridecheckGenSuccess);
-                }
-            }}>{isGenerating ? "Regenerating..." : "Regenerate"}</button>
-            <button disabled={isOpeningSaveDialog} onClick={async () => { // FIXME
-                setIsOpeningSaveDialog(true);
-                await window.ridechecksSave.ridechecksSave(getCsvString(ridecheckHeader, ridecheckRows));
-                setIsOpeningSaveDialog(false);
-            }}>{isOpeningSaveDialog ? "Working..." : "Save ridechecks CSV"}</button>
+            <button id="generate-button" disabled={isGenerating} onClick={handleGenerateRidechecks}>
+                {isGenerating ? "Regenerating..." : "Regenerate"}</button>
+            <button disabled={isOpeningSaveDialog} onClick={handleSaveRidechecks}>
+                {isOpeningSaveDialog ? "Working..." : "Save ridechecks CSV"}</button>
             <div><span>Ridecheck generation status: </span><span>{ridecheckGenMessage === ridecheckGenSuccess ? "🆗" : "❌"}</span></div>
             <div style={{'whiteSpace': 'pre-line'}}>{ridecheckGenMessage}</div>
         </section>

@@ -22,7 +22,7 @@
     
 }
 
-.tooltip span {
+.tooltip:hover span {
     text-decoration: underline;
 }
 
