@@ -66,14 +66,7 @@ async function fetchAllRidechecks(appState) {
     const couldNotGenerateErrors = [];
     const unexpectedErrors = [];
 
-    function getErrorString(errors) {
-        let errorString = '';
-        for (const {day, error} of errors) {
-            errorString += `${day}: ${error}\n`;
-        }
-        return errorString;
-    }
-
+    // Loop through all API responses and fill the 4 arrays above.
     for (let index = 0; index < jsonArray.length; index++) {
         const {status, result} = jsonArray[index];
         const day = days[index]
@@ -94,7 +87,17 @@ async function fetchAllRidechecks(appState) {
         return ridechecks;
     }
 
-    // Priority check the arrays (unexpectedErrors -> invalidDataErrors -> couldNotGenerateErrors), and return appropriate error string.
+    // Generation issues exist, will return error string:
+
+    function getErrorString(errors) {
+        let errorString = '';
+        for (const {day, error} of errors) {
+            errorString += `${day}: ${error}\n`;
+        }
+        return errorString;
+    }
+
+    // Check the arrays with priority "unexpectedErrors -> invalidDataErrors -> couldNotGenerateErrors", and return appropriate error string.
     if (unexpectedErrors.length !== 0) {
         return "Generating ridechecks for the following days produced unexpected errors:\n" + getErrorString(unexpectedErrors);
     }
@@ -131,6 +134,7 @@ function App() {
     const [appState, setAppState] = useState(asu.defaultAppState);
     const [appStateLoaded, setAppStateLoaded] = useState(false);
 
+    // Write appState to JSON file located in userData folder (OS-dependent).
     async function saveApp(appState) {
         const appStateString = JSON.stringify(appState);
         const {success, error} = await window.appState.store(appStateString);
@@ -152,7 +156,7 @@ function App() {
     useEffect(() => { // useEffect runs after first render.
         async function loadAppState() {
             const defaultAppStateString = JSON.stringify(asu.defaultAppState);
-            // If there is no state to load, makes the file and stores default state.
+            // If there is no state file to load from, makes the file and stores default state into it.
             const {success, appStateString } = await window.appState.load(defaultAppStateString);
             if (!success) {
                 console.error('cannot load application state')
@@ -164,10 +168,10 @@ function App() {
         loadAppState();
     }, [])
 
-    const [isGenerating, setIsGenerating] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false); // Used to show in the UI that we are waiting for API response.
     const [isOpeningSaveDialog, setIsOpeningSaveDialog] = useState(false);
-    const ridecheckStatusOk = 'All ridechecks generated successfully';
-    const [ridecheckStatus, setRidecheckStatus] = useState(ridecheckStatusOk);
+    const ridecheckGenSuccess = 'All ridechecks generated successfully';
+    const [ridecheckGenMessage, setRidecheckGenMessage] = useState(ridecheckGenSuccess);
     
     const defaultDay = getNextDefault('Day', asu.getDayrestrictDays(appState));
     const defaultWorker = getNextDefault('Worker', asu.getWorkers(appState));
@@ -187,7 +191,8 @@ function App() {
     // Ridechecks, Dayrestrict, Workers, and Rides.
     // Ridechecks is not user editable.
     return <>
-        {/* RIDECHECKS TABLE */}
+        
+        {/* RIDECHECKS SECTION */}
         <section id="ridechecks-section">
             <div className='table-header'>
                 <h1 className='info-output'>Ridechecks</h1>
@@ -199,31 +204,30 @@ function App() {
                 rows={ridecheckRows}
                 setRows={() => {}} // Will never be called.
                 header={ridecheckHeader}
-                inputTypes={Array(ridecheckDays.length + 1).fill('na')}
-                addRowText='+ Ride'
+                inputTypes={Array(ridecheckDays.length + 1).fill('na')} // na: not applicable i.e. not editable.
             />
-            <button id="generate-button" disabled={isGenerating} onClick={async () => {
+            <button id="generate-button" disabled={isGenerating} onClick={async () => { // FIXME
                 setIsGenerating(true);
                 const response = await fetchAllRidechecks(appState);
                 setIsGenerating(false);
                 console.log(response)
                 if (typeof response === 'string') { // Response is an error message:
-                    setRidecheckStatus(response);
+                    setRidecheckGenMessage(response);
                 } else { // Response is ridechecks:
                     asu.setRidechecks(response, setAppState);
-                    setRidecheckStatus(ridecheckStatusOk);
+                    setRidecheckGenMessage(ridecheckGenSuccess);
                 }
             }}>{isGenerating ? "Regenerating..." : "Regenerate"}</button>
-            <button disabled={isOpeningSaveDialog} onClick={async () => {
+            <button disabled={isOpeningSaveDialog} onClick={async () => { // FIXME
                 setIsOpeningSaveDialog(true);
                 await window.ridechecksSave.ridechecksSave(getCsvString(ridecheckHeader, ridecheckRows));
                 setIsOpeningSaveDialog(false);
             }}>{isOpeningSaveDialog ? "Working..." : "Save ridechecks CSV"}</button>
-            <div><span>Ridecheck status:</span><span>{ridecheckStatus === ridecheckStatusOk ? "🆗" : "❌"}</span></div>
-            <div style={{'whiteSpace': 'pre-line'}}>{ridecheckStatus}</div>
+            <div><span>Ridecheck generation status: </span><span>{ridecheckGenMessage === ridecheckGenSuccess ? "🆗" : "❌"}</span></div>
+            <div style={{'whiteSpace': 'pre-line'}}>{ridecheckGenMessage}</div>
         </section>
         
-        {/* DAYRESTRICT TABLE */}
+        {/* DAYRESTRICTS SECTION */}
         <section>
             <div className='table-header'>
                 <h1 className='info-input'>Day restrictions</h1>
@@ -243,6 +247,7 @@ function App() {
             />
         </section>
         
+        {/* WORKERS SECTION*/}
         <section id="workers-section">
             <div className='table-header'>
                 <h1 className='info-input'>Workers</h1>
@@ -250,7 +255,6 @@ function App() {
                     "One of the three input tables that is used to generate the ridechecks table.\n\n" + 
                     "NOTE: Checkbox is clickable when blue outline is visible. "}/>
             </div>
-            {/* WORKERS TABLE*/}
             <EditableTable
                 mutableRowCount={true}
                 rows={workerRows}
@@ -263,13 +267,13 @@ function App() {
             />
         </section>
 
+        {/* RIDES SECTION */}
         <section>
             <div className='table-header'>
                 <h1 className='info-input'>Rides</h1>
                 <InfoMessage message={ "Determines the rides and how long they take to check.\n\n" + 
                     "One of the three input tables that is used to generate the ridechecks table."}/>
             </div>
-            {/* RIDE TABLE */}
             <EditableTable
                 mutableRowCount={true}
                 rows={rideRows}
