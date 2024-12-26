@@ -74,28 +74,29 @@ function Row({ row, rowUpdate, inputTypes, forceCapitalization='none' }) {
 }
 
 function EditableTable({ rows, setRows, header, inputTypes, defaultRow, mutableRowCount, forceCapitalization, addRowText = 'Add row' }) {
-    function cloneRows(rows) {
-        return JSON.parse(JSON.stringify(rows));
+    function rowsUpdate(targetValue, targetValueIdx, targetRowIdx) {
+        setRows(rows.map(
+            (row, rowIdx) => rowIdx === targetRowIdx 
+            ? 
+            row.map((value, valueIdx) => valueIdx === targetValueIdx ? targetValue : value) 
+            : row)
+        )
     }
-    function rowsUpdate(newValue, valueIdx, rowIdx) {
-        const newRows = cloneRows(rows);
-        newRows[rowIdx][valueIdx] = newValue;
-        setRows(newRows);
-    }
+
     function rowsDelete(targetRowIdx) {
-        const newRows = cloneRows(rows).filter((_, rowIdx) => rowIdx !== targetRowIdx);
-        setRows(newRows);
+        setRows(rows.filter((_, rowIdx) => rowIdx !== targetRowIdx));
     }
-    const headerElements = header.map((heading, headingIdx) => <th key={headingIdx}>{heading}</th>);
+
     function RowRemoveButton({ rowIdx }) {
         return <td><button onClick={() => rowsDelete(rowIdx)}>-</button></td>;
     }
+
     function RowAddButton() {
-        return <button onClick={() => {
-            const newRows = [...cloneRows(rows), defaultRow];
-            setRows(newRows);
-        }}>{addRowText}</button>
+        return <button onClick={() => setRows([...rows, defaultRow])}>{addRowText}</button>;
     }
+
+    const headerElements = header.map((heading, headingIdx) => <th key={headingIdx}>{heading}</th>);
+
     return (
         <>
             <table>
