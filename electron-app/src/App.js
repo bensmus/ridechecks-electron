@@ -1,59 +1,8 @@
 import { useEffect, useState } from 'react';
 import EditableTable from './components/EditableTable';
 import InfoMessage from './components/InfoMessage';
-import { remove } from "lodash";
 import './App.css';
-
-const defaultAppState = {
-    rides: [
-        {ride: 'Rollercoaster', time: 22},
-        {ride: 'Helevator', time: 10},
-        {ride: 'Flume', time: 13},
-        {ride: 'Launcher', time: 25}
-    ],
-    workers: [
-        {worker: 'Alex', canCheck: ['Rollercoaster', 'Launcher']},
-        {worker: 'Kennedy', canCheck: ['Flume', 'Launcher']},
-        {worker: 'Gio', canCheck: ['Rollercoaster', 'Helevator']},
-        {worker: 'Alexa', canCheck: ['Flume', 'Helevator']}
-    ],
-    dayrestrict: [
-        {
-            day: 'Monday',
-            time: 25,
-            closedRides: ['Rollercoaster', 'Helevator'],
-            absentWorkers: ['Alexa', 'Kennedy'],
-        },
-        {
-            day: 'Tuesday',
-            time: 50,
-            closedRides: [],
-            absentWorkers: ['Kennedy'],
-        }
-    ],
-    // ridechecks: Not user editable. It may be out of sync with dayrestrict
-    // (for example if the day name changes) until generate is hit again.
-    ridechecks: [
-        {
-            day: 'Thursday',
-            ridecheck: {
-                'Rollercoaster': 'Alex',
-                'Flume': 'Alexa',
-                'Launcher': 'Gio',
-                'Helevator': 'Kennedy'
-            }
-        },
-        {
-            day: 'Tuesday',
-            ridecheck: {
-                'Rollercoaster': 'Alex',
-                'Flume': 'Alexa',
-                'Launcher': 'Gio',
-                'Helevator': 'Kennedy'
-            }
-        }
-    ]
-};
+import * as asu from './appStateUtilities';
 
 // Turn header and rows into a string that can be written to a CSV file.
 function getCsvString(header, rows) {
@@ -179,7 +128,7 @@ function getNextDefault(defaultBase, strings) {
 }
 
 function App() {
-    const [appState, setAppState] = useState(defaultAppState);
+    const [appState, setAppState] = useState(asu.defaultAppState);
     const [appStateLoaded, setAppStateLoaded] = useState(false);
 
     async function saveApp(appState) {
@@ -202,7 +151,7 @@ function App() {
     // https://stackoverflow.com/questions/66993812/usestate-vs-useeffect-setting-initial-value
     useEffect(() => { // useEffect runs after first render.
         async function loadAppState() {
-            const defaultAppStateString = JSON.stringify(defaultAppState);
+            const defaultAppStateString = JSON.stringify(asu.defaultAppState);
             // If there is no state to load, makes the file and stores default state.
             const {success, appStateString } = await window.appState.load(defaultAppStateString);
             if (!success) {
@@ -215,145 +164,24 @@ function App() {
         loadAppState();
     }, [])
 
-    function cloneAppState() {
-        return JSON.parse(JSON.stringify(appState));
-    }
-
-    function getRideRows() {
-        return appState.rides.map(obj => [obj.ride, obj.time]);
-    }
-
-    function getRides() {
-        return appState.rides.map(obj => obj.ride);
-    }
-
-    function getWorkers() {
-        return appState.workers.map(obj => obj.worker);
-    }
-
-    // Might be out of date with dayrestrict.
-    function getRidecheckDays() {
-        return appState.ridechecks.map(obj => obj.day);
-    }
-
-    function getDayrestrictDays() {
-        return appState.dayrestrict.map(obj => obj.day);
-    }
-
-    function setRideRows(newRows) {
-        const newAppState = cloneAppState();
-        const rides = [];
-        // Update newAppState.rides.
-        newAppState.rides = newRows.map(([ride, time]) => ({ride, time}));
-        for (const [ride] of newRows) {
-            rides.push(ride);
-        }
-        // Update newAppState.workers by removing nonexistent rides.
-        for (const obj of newAppState.workers) {
-            remove(obj.canCheck, ride => !rides.includes(ride));
-        }
-        // Update newAppState.dayrestrict.
-        for (const obj of newAppState.dayrestrict) {
-            remove(obj.closedRides, ride => !rides.includes(ride));
-        }
-        setAppState(newAppState);
-    }
-
-    // Worker rows have "worker", "checkbox1", ... "checkboxN".
-    function getWorkerRows() {
-        const rows = [];
-        for (const {worker, canCheck} of appState.workers) {
-            function workerCanCheck(ride) { return canCheck.includes(ride); }
-            const row = [worker].concat(getRides().map(workerCanCheck));
-            rows.push(row);
-        }
-        return rows;
-    }
-
-    function setWorkerRows(newRows) {
-        const newAppState = cloneAppState();
-        const rides = getRides();
-        // Update newAppState.workers
-        newAppState.workers = [];
-        const workers = [];
-        for (const row of newRows) {
-            const [worker, ...rideBools] = row;
-            workers.push(worker);
-            const canCheck = [];
-            // Loop through the checkboxes
-            for (const [rideIdx, rideBool] of rideBools.entries()) {
-                if (rideBool) {
-                    canCheck.push(rides[rideIdx]);
-                }
-            }
-            newAppState.workers.push({worker, canCheck});
-        }
-        // Update newAppState.dayrestrict
-        for (const obj of newAppState.dayrestrict) {
-            remove(obj.absentWorkers, worker => !workers.includes(worker));
-        }
-        setAppState(newAppState);
-    }
-
-    function getDayrestrictRows() {
-        const rows = [];
-        for (const obj of appState.dayrestrict) {
-            const row = [
-                obj.day,
-                obj.time,
-                {allset: getWorkers(), subset: obj.absentWorkers},
-                {allset: getRides(), subset: obj.closedRides},
-            ];
-            rows.push(row);
-        }
-        return rows;
-    }
-
-    function setDayrestrictRows(newRows) {
-        const newAppState = cloneAppState();
-        newAppState.dayrestrict = [];
-        for (const [day, time, absentWorkersObj, closedRidesObj] of newRows) {
-            newAppState.dayrestrict.push({
-                day,
-                time,
-                absentWorkers: absentWorkersObj.subset,
-                closedRides: closedRidesObj.subset,
-            });
-        }
-        setAppState(newAppState);
-    }
-
-    function getRidecheckRows() {
-        const rows = [];
-        const ridecheckDays = getRidecheckDays();
-        for (const ride of getRides()) {
-            const row = [ride];
-            for (const day of ridecheckDays) {
-                const obj = appState.ridechecks.find(obj => obj.day === day);
-                row.push(obj.ridecheck[ride] ?? "CLOSED");
-            }
-            rows.push(row);
-        }
-        return rows;
-    }
- 
-    function setRidechecks(newRidechecks) {
-        setAppState((state) => ({...state, ridechecks: newRidechecks}));
-    }
-
-    const numRides = getRides().length;
-    
-    function getRidecheckHeader() {
-        return ['Ride'].concat(getRidecheckDays());
-    }
-
     const [isGenerating, setIsGenerating] = useState(false);
     const [isOpeningSaveDialog, setIsOpeningSaveDialog] = useState(false);
     const ridecheckStatusOk = 'All ridechecks generated successfully';
     const [ridecheckStatus, setRidecheckStatus] = useState(ridecheckStatusOk);
-    const defaultDay = getNextDefault('Day', getDayrestrictDays());
-    const defaultWorker = getNextDefault('Worker', getWorkers());
-    const defaultRide = getNextDefault('Ride', getRides());
+    
+    const defaultDay = getNextDefault('Day', asu.getDayrestrictDays(appState));
+    const defaultWorker = getNextDefault('Worker', asu.getWorkers(appState));
+    const defaultRide = getNextDefault('Ride', asu.getRides(appState));
+    
+    const workers = asu.getWorkers(appState);
+    const rides = asu.getRides(appState);
+    const numRides = rides.length;
+    const rideRows = asu.getRideRows(appState);
+    const workerRows = asu.getWorkerRows(appState);
+    const ridecheckRows = asu.getRidecheckRows(appState);
+    const dayrestrictRows = asu.getDayrestrictRows(appState);
+    const ridecheckHeader = asu.getRidecheckHeader(appState)
+    const ridecheckDays = asu.getRidecheckDays(appState);
 
     // Return four EditableTable components: 
     // Ridechecks, Dayrestrict, Workers, and Rides.
@@ -368,10 +196,10 @@ function App() {
             </div>
             <EditableTable
                 mutableRowCount={false}
-                rows={getRidecheckRows()}
+                rows={ridecheckRows}
                 setRows={() => {}} // Will never be called.
-                header={getRidecheckHeader()}
-                inputTypes={Array(getRidecheckDays().length + 1).fill('na')}
+                header={ridecheckHeader}
+                inputTypes={Array(ridecheckDays.length + 1).fill('na')}
                 addRowText='+ Ride'
             />
             <button id="generate-button" disabled={isGenerating} onClick={async () => {
@@ -382,13 +210,13 @@ function App() {
                 if (typeof response === 'string') { // Response is an error message:
                     setRidecheckStatus(response);
                 } else { // Response is ridechecks:
-                    setRidechecks(response);
+                    asu.setRidechecks(response, setAppState);
                     setRidecheckStatus(ridecheckStatusOk);
                 }
             }}>{isGenerating ? "Regenerating..." : "Regenerate"}</button>
             <button disabled={isOpeningSaveDialog} onClick={async () => {
                 setIsOpeningSaveDialog(true);
-                await window.ridechecksSave.ridechecksSave(getCsvString(getRidecheckHeader(), getRidecheckRows()));
+                await window.ridechecksSave.ridechecksSave(getCsvString(ridecheckHeader, ridecheckRows));
                 setIsOpeningSaveDialog(false);
             }}>{isOpeningSaveDialog ? "Working..." : "Save ridechecks CSV"}</button>
             <div><span>Ridecheck status:</span><span>{ridecheckStatus === ridecheckStatusOk ? "🆗" : "❌"}</span></div>
@@ -405,11 +233,11 @@ function App() {
             </div>
             <EditableTable
                 mutableRowCount={true}
-                rows={getDayrestrictRows()}
-                setRows={setDayrestrictRows}
+                rows={dayrestrictRows}
+                setRows={(newRows) => {asu.setDayrestrictRows(newRows, setAppState)}}
                 header={['Day', 'Time till opening (mins)', 'Absent workers', 'Closed rides']}
                 inputTypes={['text', 'number', 'subset', 'subset']}
-                defaultRow={[defaultDay, 100, { allset: getWorkers(), subset: [] }, { allset: getRides(), subset: [] }]}
+                defaultRow={[defaultDay, 100, { allset: workers, subset: [] }, { allset: rides, subset: [] }]}
                 forceCapitalization="titlecase"
                 addRowText='+ Day'
             />
@@ -425,9 +253,9 @@ function App() {
             {/* WORKERS TABLE*/}
             <EditableTable
                 mutableRowCount={true}
-                rows={getWorkerRows()}
-                setRows={setWorkerRows}
-                header={['Worker'].concat(getRides())}
+                rows={workerRows}
+                setRows={(newRows) => {asu.setWorkerRows(newRows, setAppState)}}
+                header={['Worker'].concat(rides)}
                 inputTypes={['text'].concat(Array(numRides).fill('checkbox'))}
                 defaultRow={[defaultWorker].concat(Array(numRides).fill(false))}
                 forceCapitalization="titlecase"
@@ -444,8 +272,8 @@ function App() {
             {/* RIDE TABLE */}
             <EditableTable
                 mutableRowCount={true}
-                rows={getRideRows()}
-                setRows={setRideRows}
+                rows={rideRows}
+                setRows={(newRows) => {asu.setRideRows(newRows, setAppState)}}
                 header={['Ride', 'Time to check (mins)']}
                 inputTypes={['text', 'number']}
                 defaultRow={[defaultRide, 10]}
