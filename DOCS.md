@@ -82,8 +82,12 @@ Here's how it works:
 
 ### Constraint satisfaction problem
 
-The point of all this software is to provide inputs to a constraint satisfaction problem. 
+The point of all this software is to provide inputs to a constraint satisfaction problem (CSP), a type of mathematical problem. Sudoku and crosswords are types of CSPs. 
 
 The problem is defined as follows: 
 - You are given a bunch of task variables, and each variable has a domain of workers.
 - Assign the task variables to worker values such that each worker's constraint is satisfied, where a worker's constraint is that the total time of all the tasks that they are assigned cannot exceed a certain value.
+
+The python-constraint library supports multiple solvers (Python classes implementing various solving techniques). The default solver uses backtracking search, but I chose to use the solver that uses minimum-conflicts hill-climbing. This technique is more suitable in my scenario because it provides a random satisfying assignment as opposed to the same assignment each time. The min-conflicts solver works by choosing a random task and assigning it to a worker that minimizes the number of unsatisfied constraints i.e. conflicts. This means that workers are more likely to cycle through tasks and not be constantly assigned to the same task, reducing worker fatigue.
+
+You can find the definition and execution of the CSP on lines 62 to 83 of `python-assigner/lambda_function.py`.
