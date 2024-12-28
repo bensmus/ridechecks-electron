@@ -58,13 +58,19 @@ That blog describes how to modify source code for a web application in order to 
 
 ### How the user interface works
 
-The UI is implemented in React. React is a component-based framework where each component can have a state. The following paragraph assumes some knowledge of React.
+The UI is implemented in React. React is a component-based framework where each component can have a state. The following section assumes some knowledge of React.
 
 My design has one App component with the app state. This component contains all of the information that is saved into the `state.json` file. The App component has four EditableTable components as children, which read and write to the app state (always modified set using `setAppState`). The way that the EditableTable components read and write to the app state is via two props: 
 1. Prop for reading application state: Some part of the application state is passed as a prop. 
 2. Prop for writing to application state: A callback function that calls `setAppState` in a particular way. 
 
-When one of the EditableTable components updates the app state, this triggers a rerender of all of the EditableTable components. In React, when the parent component state changes, it triggers a parent component rerender, which in turn triggers rerenders of all of the children components of that parent. This is what allows all of the UI elements to be in sync with each other.
+When one of the EditableTable components updates the app state, this potentially rerenders its sibling EditableTable components, keeping them in sync.
+
+Here's how it works:
+1. "EditableTable A" calls its callback prop and update App's state.
+2. This triggers App to rerender. 
+3. During App's rerender, the prop for reading application state passed to the siblings of "EditableTable A" may be changed.
+4. If the sibling's prop was changed, it rerenders.
 
 ### Design of app state and API
 
