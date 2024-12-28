@@ -36,7 +36,7 @@ Each user has their own instance of the Electron application, with their own `st
 
 Typically, the software does the following:
 1. Read the app state when the app loads from the `state.json` file. Modify the app state using the user interface.
-2. When the app state reflects what the user wants, the app makes an API call. The API call is a POST request with the JSON app state in the body, and the lambda function returns a JSON response, with either an error string or the assignment.
+2. When the app state reflects what the user wants, the app makes an API call. The API call is a POST request with the JSON app state in the body, and the lambda function returns a JSON response, with either an error string or the assignments.
 3. The user can save the assignments locally as a CSV file in case they want to edit them in a spreadsheet application.
 
 ### Technology stack
@@ -72,6 +72,18 @@ Here's how it works:
 3. During App's rerender, the prop for reading application state passed to the siblings of "EditableTable A" may be changed.
 4. If the sibling's prop was changed, it rerenders.
 
-### Design of app state and API
+### Design of app state
+
+`electron-app/src/appStateUtilities.js` specifies the default state object and provides functions for updating it. The state always has:
+- Rides array
+- Workers array
+- Day restrictions array
+- Ridechecks array
 
 ### Constraint satisfaction problem
+
+The point of all this software is to provide inputs to a constraint satisfaction problem. 
+
+The problem is defined as follows: 
+- You are given a bunch of task variables, and each variable has a domain of workers.
+- Assign the task variables to worker values such that each worker's constraint is satisfied, where a worker's constraint is that the total time of all the tasks that they are assigned cannot exceed a certain value.
