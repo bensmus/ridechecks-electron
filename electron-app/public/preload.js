@@ -10,7 +10,6 @@ const { contextBridge, ipcRenderer } = require("electron");
 process.once("loaded", () => {
     console.log('preload.js loaded')
     contextBridge.exposeInMainWorld('appState', {
-        // relpath is relative to app.getPath('userData')
         store: (state) => ipcRenderer.invoke('appStateStore', state),
         load: (defaultState) => ipcRenderer.invoke('appStateLoad', defaultState),
     });
