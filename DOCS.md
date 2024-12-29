@@ -6,24 +6,23 @@ This repository contains the source code for an Electron application (located in
 
 Suppose this software is used by a factory manager, whose factory has 10 tasks, each taking 5 minutes, and employs 2 workers. The factory manager wants to deploy the aformentioned workers to complete all tasks in 25 minutes. The software assumes that the workers can complete tasks concurrently, and each task can be completed independently of every other task, and would therefore assign each worker to 5 tasks. This means that each worker works for 25 minutes (5 tasks * 5 minutes); together, the workers are able to complete all of the tasks in the allotted time. If the factory manager allotted 20 minutes, the software would notify the factory manager that no worker assignment is possible such that all tasks are completed in the alloted time.
 
-### Realistic example
+### UI explanation
 
-This software does not assume that every worker can perform every task, and features a table with checkboxes that allows the user to specify which tasks each worker can perform. 
+The software features four tables: three tables that allow the user to modify the worker and task parameters (input tables), and one table displaying task assignments. Instead of just generating one assignment, the software supports generating mutliple assignments for multiple days because this is more convenient to the user.
 
-<img src="screenshots/workers_table.png" alt="Workers table" width="300">
+The first input table allows the user to specify which tasks each worker can perform. 
 
-It also features a table for editing task durations.
+<img src="screenshots/workers_table.png" alt="Workers table" width="300">.
+
+The second input table allows the editing of task durations. 
 
 <img src="screenshots/rides_table.png" alt="Rides table" width="300">
 
-*FIXME why even talk about this*
-
-This software provides a convenience to the user: they can generate multiple assignments in one go. For example, if there are 3 timeslots during which certain tasks need to be completed, the user can specify subsets of workers and tasks for each timeslot using a table.
+The third input table allows the editing of the total allotted time for each day, and allows each day to have slight variations between them  with the "closed rides" (rides=tasks) and "absent workers" columns: on a given day, some tasks or some workers might not be available.
 
 <img src="screenshots/day_restrictions_table.png" alt="Day restrictions table" width="600">
 
-FIXME input tables?
-Here's the assignments that the software generates based on the information in the 3 input tables:
+Here's the assignments that the software generates based on the specific information contained in the 3 input tables above:
 
 <img src="screenshots/ridechecks_table.png" alt="Ridechecks table" width="300">
 <br>
