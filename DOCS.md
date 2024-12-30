@@ -50,6 +50,23 @@ The stack:
 
 *FIXME this is unnecessary because using Node.js child_process module is better*
 
+Get your package into the filesystem
+```
+python3 -m pip install --target=./packages requests
+```
+
+```
+const { spawn } = require('child_process');
+
+const py = spawn('python3', ['/home/telmo/hello.py'])
+
+py.stdout.on('data', (data) => {
+  console.log(`${data}`)
+});
+```
+
+![wow](./screenshots/packages_local.png)
+
 - An AWS Lambda triggered via  AWS API Gateway, which runs on Amazon's servers. The Lambda computes the assignment by using the  [python-constraint](https://github.com/python-constraint/python-constraint) module, specifically the `MinConflictsSolver` class.
 
 ### Electron application 
