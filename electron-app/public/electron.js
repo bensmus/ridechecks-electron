@@ -146,3 +146,31 @@ ipcMain.handle('ridechecksSave', async (event, ridechecks) => {
         fs.writeFileSync(filePath, ridechecks);
     }
 })
+
+function ridecheckGenerate(problem_data) {
+    return new Promise((resolve, reject) => {
+        const py = spawn('python3', ['./assigner.py']);
+
+        py.stdin.write(JSON.stringify(problem_data));
+        py.stdin.end(); // So that python .read() call knows when to stop blocking.
+
+        let accumulated = "";
+
+        py.stdout.on('data', (data) => {
+            accumulated += data;
+            });
+            
+        py.on('close', () => {
+            try {
+                const result = JSON.parse(accumulated);
+                resolve(result)
+            } catch (error) {
+                reject(error)
+            }
+        });
+    })
+}
+
+ipcMain.handle('ridecheckGenerate', (event, problem_data) => {
+    return ridecheckGenerate(problem_data)
+})

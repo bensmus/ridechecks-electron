@@ -9,11 +9,14 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 process.once("loaded", () => {
     console.log('preload.js loaded')
-    contextBridge.exposeInMainWorld('appState', {
+    contextBridge.exposeInMainWorld('appState', { // IO with userData file.
         store: (state) => ipcRenderer.invoke('appStateStore', state),
         load: (defaultState) => ipcRenderer.invoke('appStateLoad', defaultState),
     });
-    contextBridge.exposeInMainWorld('ridechecksSave', {
+    contextBridge.exposeInMainWorld('ridechecksSave', { // Opens OS save dialog.
         ridechecksSave: (ridechecks) => ipcRenderer.invoke('ridechecksSave', ridechecks)
+    });
+    contextBridge.exposeInMainWorld('ridecheckGenerate', { // Spawns Python process to generate one ridecheck.
+        ridecheckGenerate: (problemData) => ipcRenderer.invoke('ridecheckGenerate', problemData)
     });
 });

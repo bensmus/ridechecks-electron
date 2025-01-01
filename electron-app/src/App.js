@@ -25,29 +25,12 @@ function applyDayRestrict(appState, day) {
     return problemData;
 }
 
-// `problemData` is for one specific day, as is a ridecheck.
-// Called multiple times in fetchAllRidechecks.
-async function fetchRidecheck(problemData) {
-    // Needed to set Access-Control-Allow-Origin to * in AWS console in order to make this work.
-    const url = "https://grhg6g6d90.execute-api.us-west-2.amazonaws.com/ridecheck_generator";
-    const options = {
-        'method': 'POST',
-        'headers': {
-            'Content-Type': 'application/json',
-        },
-        'body': JSON.stringify(problemData)
-    };
-    const response = await fetch(url, options);
-    const json = await response.json();
-    return json;
-}
-
 // Returns either an error string or ridechecks, which is {day: "...", ridecheck: {...} }[].
 async function fetchAllRidechecks(appState) {
     const days = appState.dayrestrict.map(obj => obj.day);
     const promises = days.map(day => {
         const problemData = applyDayRestrict(appState, day);
-        return fetchRidecheck(problemData);
+        return window.ridecheckGenerate.ridecheckGenerate(problemData);
     });
     
     /**
