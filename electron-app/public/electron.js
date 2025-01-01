@@ -149,20 +149,27 @@ ipcMain.handle('ridechecksSave', async (event, ridechecks) => {
 
 function ridecheckGenerate(problem_data) {
     return new Promise((resolve, reject) => {
-        const py = spawn('python3', ['./assigner.py']);
+        const py = spawn('python3', ['public/assigner.py']);
 
         py.stdin.write(JSON.stringify(problem_data));
         py.stdin.end(); // So that python .read() call knows when to stop blocking.
 
-        let accumulated = "";
+        let accumulatedStdout = "";
+        let accumulatedStderr = "";
 
         py.stdout.on('data', (data) => {
-            accumulated += data;
-            });
+            accumulatedStdout += data;
+        });
+        
+        py.stderr.on('data', (data) => {
+            accumulatedStderr += data;
+        })
             
         py.on('close', () => {
+            console.log('accumulatedStdout', accumulatedStdout);
+            console.log('accumulatedStderr', accumulatedStderr);
             try {
-                const result = JSON.parse(accumulated);
+                const result = JSON.parse(accumulatedStdout);
                 resolve(result)
             } catch (error) {
                 reject(error)

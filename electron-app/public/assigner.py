@@ -1,3 +1,5 @@
+# To test: python3 public/assigner.py < public/assigner_test_file.json
+
 import sys
 sys.path.append('./python-package')
 import constraint as csp
@@ -94,7 +96,7 @@ def done(status, result):
     exit(0)
 
 
-problem_data = sys.stdin.read()
+problem_data = json.loads(sys.stdin.read())
 
 status = 'unexpected error'
 result = None
