@@ -67,6 +67,12 @@ py.stdout.on('data', (data) => {
 
 ![wow](./screenshots/packages_local.png)
 
+All you need
+```
+npm init
+npm i --save-dev electron
+npx electron .
+```
 - An AWS Lambda triggered via  AWS API Gateway, which runs on Amazon's servers. The Lambda computes the assignment by using the  [python-constraint](https://github.com/python-constraint/python-constraint) module, specifically the `MinConflictsSolver` class.
 
 ### Electron application 
