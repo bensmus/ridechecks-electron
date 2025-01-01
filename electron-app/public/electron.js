@@ -180,4 +180,4 @@ function ridecheckGenerate(problem_data) {
 
 ipcMain.handle('ridecheckGenerate', (event, problem_data) => {
     return ridecheckGenerate(problem_data)
-})
+});
