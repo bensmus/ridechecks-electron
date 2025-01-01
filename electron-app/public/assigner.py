@@ -1,8 +1,9 @@
-# To test: python3 public/assigner.py < public/assigner_test_file.json
+# To test (inside public folder): 
+# python3 assigner.py ./python-package < assigner_test_file.json
 
 import sys
-sys.path.append('./python-package')
-import constraint as csp
+sys.path.append(sys.argv[1]) # Specify directory with csp package.
+import constraint as csp # type: ignore
 import json
 from typing import List
 

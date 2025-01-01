@@ -149,7 +149,13 @@ ipcMain.handle('ridechecksSave', async (event, ridechecks) => {
 
 function ridecheckGenerate(problem_data) {
     return new Promise((resolve, reject) => {
-        const py = spawn('python3', ['public/assigner.py']);
+        const py = spawn(
+            path.join(__dirname, 'python3.12'), 
+            [
+                path.join(__dirname, 'assigner.py'), 
+                path.join(__dirname, 'python-package')
+            ]
+        );
 
         py.stdin.write(JSON.stringify(problem_data));
         py.stdin.end(); // So that python .read() call knows when to stop blocking.

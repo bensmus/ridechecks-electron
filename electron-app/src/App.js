@@ -49,7 +49,7 @@ async function fetchAllRidechecks(appState) {
     const couldNotGenerateErrors = [];
     const unexpectedErrors = [];
 
-    // Loop through all API responses and fill the 4 arrays above.
+    // Loop through all responses and fill the 4 arrays above.
     for (let index = 0; index < jsonArray.length; index++) {
         const {status, result} = jsonArray[index];
         const day = days[index]
@@ -62,7 +62,7 @@ async function fetchAllRidechecks(appState) {
         } else if (status === 'unexpected error') {
             unexpectedErrors.push({day, error: result})
         } else {
-            throw new Error(`api error - status ${status} is not valid - this code should never be reached`);
+            throw new Error(`python process error - status ${status} is not valid - this code should never be reached`);
         }
     }
 
