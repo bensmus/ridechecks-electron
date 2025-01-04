@@ -150,7 +150,7 @@ ipcMain.handle('ridechecksSave', async (event, ridechecks) => {
 function ridecheckGenerate(problem_data) {
     return new Promise((resolve, reject) => {
         const proc = spawn(
-            path.join(__dirname, 'assigner'), // The pyinstaller executable.
+            path.join(app.getAppPath(), 'public/assigner'), // The pyinstaller executable.
         );
 
         proc.stdin.write(JSON.stringify(problem_data));
