@@ -2,9 +2,46 @@
 
 This repository contains the source code for an Electron application (located in the `electron-app` folder) and an associated API (located in the `python-assigner` folder) that the Electron application calls. The goal of this software is to allow its user to generate an assignment of workers to tasks.
 
-### Basic example
+### Constraint satisfaction problem
 
-Suppose this software is used by a factory manager, whose factory has 10 tasks, each taking 5 minutes, and employs 2 workers. The factory manager wants to deploy the aformentioned workers to complete all tasks in 25 minutes. The software assumes that the workers can complete tasks concurrently, and each task can be completed independently of every other task, and would therefore assign each worker to 5 tasks. This means that each worker works for 25 minutes (5 tasks * 5 minutes); together, the workers are able to complete all of the tasks in the allotted time. If the factory manager allotted 20 minutes, the software would notify the factory manager that no worker assignment is possible such that all tasks are completed in the alloted time.
+The point of all this software is to provide inputs to a [constraint satisfaction problem (CSP)](https://en.wikipedia.org/wiki/Constraint_satisfaction_problem), a type of mathematical problem. Sudoku and crosswords are types of CSPs. 
+
+The problem can be defined by treating each task as a variable that has a discrete domain of workers. For example, the variable "maintaining the converyor belt" has a domain of ["alex", "george", and "kevin"], meaning it can take on one of those values. Then, choose a worker for each task (assign a value to the variable) such that the workers have time to complete all of their assigned tasks. Formally, each worker has a constraint: the total time of all the tasks that they are assigned cannot exceed a certain value.
+
+The python-constraint library supports multiple "Solvers": Python classes implementing various solving techniques. The default solver uses backtracking search, but I chose to use the solver that uses [minimum-conflicts hill-climbing](https://en.wikipedia.org/wiki/Min-conflicts_algorithm). This technique is more suitable in my scenario because it provides a random satisfying assignment as opposed to the same assignment each time. The min-conflicts solver works by choosing a random task and assigning a worker to it that minimizes the number of unsatisfied constraints i.e. conflicts. This means that workers are more likely to cycle through tasks and not be constantly assigned to the same task, reducing worker fatigue.
+
+For example, suppose we have the following scenario:
+- Clean: takes 12 mins, domain Ashley, Ivan, John
+- Cook: 15 mins, domain John, Ivan
+- Buy: 5 mins, domain Ivan
+- Write: 5 mins, domain Ashley, Ivan, John
+
+Max work time is 15 mins.
+
+Using min-conflicts, we start with a random assignment of tasks to one of the workers that can do that task.
+
+| Clean | Cook | Buy | Write | 
+| ----- | ---- | --- | ----- | 
+| Ashley | Ivan | Ivan | Ashley |
+
+In this case, there are two conflicts:
+1. Ashley works for 12 + 5 = 17 minutes (17 > 15)
+2. Ivan works for 20 minutes (20 > 15)
+
+Then we choose a random task, for simplicity "cook", and assign it a value that minimizes the number of conflicts. Assigning "cook" to John causes there to only be one conflict:
+1. Ashley works for 17 minutes
+
+| Clean | Cook | Buy | Write | 
+| ----- | ---- | --- | ----- | 
+| Ashley | John | Ivan | Ashley |
+
+Then we luckily choose another random task, "clean", and assign it to Ivan. Now there are no conflicts because all workers work for max 15 minutes.
+
+| Clean | Cook | Buy | Write | 
+| ----- | ---- | --- | ----- | 
+| Ashley | John | Ivan | Ivan |
+
+You can find the definition and execution of the CSP on lines 62 to 83 of `python-assigner/lambda_function.py`.
 
 ### UI explanation
 
@@ -48,9 +85,11 @@ The stack:
     - One main process, which has access to operating system features such as saving files to the filesystem. This process is interpreted by Node.js. 
     - At least one renderer process, which is spawned by the main process. I'm oversimplifying, but this renderer process has a mini-browser inside of it, and it understands JavaScript/HTML/CSS for browsers. In my case, I'm developing code for the renderer process using React, a very popular modern JavaScript framerwork. My main process only spawns one renderer process, since the application only needs one window, and does not require any web-based background tasks.
 
-*FIXME this is unnecessary because using Node.js child_process module is better*
+- An AWS Lambda triggered via  AWS API Gateway, which runs on Amazon's servers. The Lambda computes the assignment by using the [python-constraint](https://github.com/python-constraint/python-constraint) module, specifically the `MinConflictsSolver` class. Another way to use the python-constraint library from inside Electron would be with the Node.js [child_process](https://nodejs.org/api/child_process.html) module, starting either:
+    - `python3 my_script.py` (would have to embed a python interpreter)
+    - `executable_from_script` (generated via pyinstaller or similar) 
 
-- An AWS Lambda triggered via  AWS API Gateway, which runs on Amazon's servers. The Lambda computes the assignment by using the  [python-constraint](https://github.com/python-constraint/python-constraint) module, specifically the `MinConflictsSolver` class.
+    as a child process.
 
 ### Electron application 
 
@@ -59,10 +98,14 @@ To setup the boilerplate for the Electron application, I followed instructions f
 That blog describes how to modify source code for a web application in order to use it in an Electron desktop application. The blog mainly helped me to:
 - Add code (`electron-app/public/electron.js`) which implements the Electron main process.
 
-*FIXME and what does this main process do?*
-
 - Add code (`electron-app/public/preload.js`) which specifies  how the Electron main process can communicate with the renderer process. This is described as an optional step in the blog, but has become a mandatory step since the blog's publication due to stricter security enforcement in the new Electron version.
 - Run and package the Electron app by installing the necessary packages and updating the `electron-app/package.json`.
+
+Besides spawning the renderer process, the main process handles:
+- Reading/writing from state.json file.
+- Save dialog for saving the assignments as a CSV.
+
+These tasks are OS-related and the renderer process does not have permission to perform these tasks. They have to be implemented in the main process.
 
 ### How the user interface works
 
@@ -83,25 +126,19 @@ Here's how it works:
 ### Design of app state
 
 `electron-app/src/appStateUtilities.js` specifies the default state object and provides functions for updating it. The state always has:
-- Rides array
-- Workers array
-- Day restrictions array
-- Ridechecks array
+- Rides array, containing Ride objects. Each ride object has
+    - Name (strings)
+    - Time (number)
+- Workers array, containing Worker objects. Each worker object has
+    - Name (string)
+    - CanCheck (list of ride names, which are strings)
+- Day restrictions array, containing DayRestriction objects. Each has
+    - Day (string, the name of the day)
+    - Time (number, how long the workers have to complete their tasks on that day)
+    - ClosedRides (list of ride names, which are strings)
+    - AbsentWorkers (list of worker names, which are strings)
+- Ridechecks array, containing Ridecheck objects. Each has
+    - Day (string, the name of the day)
+    - A ridecheck object, which is used as a map from ride to worker names.
 
-FIXME explain the rows in the table converting to state updates
-
-### Constraint satisfaction problem
-
-The point of all this software is to provide inputs to a constraint satisfaction problem (CSP), a type of mathematical problem. Sudoku and crosswords are types of CSPs. 
-
-*FIXME show diagram or a concrete example, describing how tasks take time*
-
-*FIXME CSP should be explained earlier, when you're explaining the basic example*
-
-The problem can be defined by treating each task as a variable that has a discrete domain of workers. For example, the variable "maintaining the converyor belt" has a domain of ["alex", "george", and "kevin"]. Then, choose a worker for each task (assign a value to the variable) such that the workers have time to complete all of their assigned tasks. Formally, each worker has a constraint: the total time of all the tasks that they are assigned cannot exceed a certain value.
-
-The python-constraint library supports multiple "Solvers": Python classes implementing various solving techniques. The default solver uses backtracking search, but I chose to use the solver that uses minimum-conflicts hill-climbing. This technique is more suitable in my scenario because it provides a random satisfying assignment as opposed to the same assignment each time. The min-conflicts solver works by choosing a random task and assigning a worker to it that minimizes the number of unsatisfied constraints i.e. conflicts. This means that workers are more likely to cycle through tasks and not be constantly assigned to the same task, reducing worker fatigue.
-
-*FIXME need links to CSP and details*
-
-You can find the definition and execution of the CSP on lines 62 to 83 of `python-assigner/lambda_function.py`.
+The state was chosen to be easily serializable to JSON. I originaly had a simpler state which didn't allow duplicate ride or worker names: there were no ride objects or worker objects in an array, just name keys to Time or CanCheck values. That caused issues with worker names that were substrings of other worker names, for example Alex and Alexa, since an object cannot have duplicate keys.
