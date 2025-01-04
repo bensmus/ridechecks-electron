@@ -150,11 +150,7 @@ ipcMain.handle('ridechecksSave', async (event, ridechecks) => {
 function ridecheckGenerate(problem_data) {
     return new Promise((resolve, reject) => {
         const proc = spawn(
-            path.join(__dirname, 'python3.12'), // THIS IS BAD ANYWAYS
-            [
-                path.join(__dirname, 'assigner.py'), 
-                // path.join(__dirname, 'python-package')
-            ]
+            path.join(__dirname, 'assigner'), // The pyinstaller executable.
         );
 
         proc.stdin.write(JSON.stringify(problem_data));
