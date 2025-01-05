@@ -1,0 +1,1 @@
+To make a package that can be deployed to a lambda function, run the makefile. The makefile is based on https://docs.aws.amazon.com/lambda/latest/dg/python-package.html#python-package-create-dependencies
