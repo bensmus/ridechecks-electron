@@ -8,7 +8,7 @@ The point of all this software is to provide inputs to a [constraint satisfactio
 
 The problem can be defined by treating each task as a variable that has a discrete domain of workers. For example, the variable "maintaining the converyor belt" has a domain of ["alex", "george", and "kevin"], meaning it can take on one of those values. Then, choose a worker for each task (assign a value to the variable) such that the workers have time to complete all of their assigned tasks. Formally, each worker has a constraint: the total time of all the tasks that they are assigned cannot exceed a certain value.
 
-The python-constraint library supports multiple "Solvers": Python classes implementing various solving techniques. The default solver uses backtracking search, but I chose to use the solver that uses [minimum-conflicts hill-climbing](https://en.wikipedia.org/wiki/Min-conflicts_algorithm). This technique is more suitable in my scenario because it provides a random satisfying assignment as opposed to the same assignment each time. The min-conflicts solver works by choosing a random task and assigning a worker to it that minimizes the number of unsatisfied constraints i.e. conflicts. This means that workers are more likely to cycle through tasks and not be constantly assigned to the same task, reducing worker fatigue.
+The python-constraint library supports multiple "Solvers": Python classes implementing various solving techniques. The default solver uses backtracking search, but I chose to use the solver that uses [minimum-conflicts hill-climbing](https://en.wikipedia.org/wiki/Min-conflicts_algorithm). This technique is more suitable in my scenario because it provides a random satisfying assignment as opposed to the same assignment each time. The min-conflicts solver works by choosing a random task and assigning a worker to it that minimizes the number of unsatisfied constraints i.e. conflicts. This means that workers are unlikely to be assigned to the same task the next time an assignment is generated, which reduces worker fatigue.
 
 For example, suppose we have the following scenario:
 - Clean: takes 12 mins, domain Ashley, Ivan, John
@@ -73,17 +73,18 @@ Here's the assignments that the software generates based on the specific informa
 
 Each user has their own instance of the Electron application, with their own `state.json` file for the Electron application's state, and all users access the same API.
 
-Typically, the software does the following:
-1. Read the app state when the app loads from the `state.json` file. Modify the app state using the user interface.
-2. When the app state reflects what the user wants, the app makes an API call. The API call is a POST request with the JSON app state in the body, and the lambda function returns a JSON response, with either an error string or the assignments.
-3. The user can save the assignments locally as a CSV file in case they want to edit them in a spreadsheet application.
+Here are the main events that the software responds to:
+1. When it loads: read the state from the `state.json` file. 
+2. When user edits table in the UI: Modify the app state.
+2. When user clicks "regenerate" button: App makes API call, a POST request with the JSON app state in the body, and the lambda function returns a JSON response, with either an error string or the assignments.
+3. When user clicks "save" button: App opens OS save dialog, allowing the user to save the assignments locally as a CSV file in case they want to edit them in a spreadsheet application or just for recordkeeping.
 
 ### Technology stack
 
 The stack:
 - The Electron application, which runs locally on the user's computer. All Electron applications run as at least two processes that communicate with each another: 
     - One main process, which has access to operating system features such as saving files to the filesystem. This process is interpreted by Node.js. 
-    - At least one renderer process, which is spawned by the main process. I'm oversimplifying, but this renderer process has a mini-browser inside of it, and it understands JavaScript/HTML/CSS for browsers. In my case, I'm developing code for the renderer process using React, a very popular modern JavaScript framerwork. My main process only spawns one renderer process, since the application only needs one window, and does not require any web-based background tasks.
+    - At least one renderer process, which is spawned by the main process. I'm oversimplifying, but this renderer process has a mini-browser inside of it, and it understands JavaScript/HTML/CSS for browsers. In my case, I'm developing code for the renderer process using React. My main process only spawns one renderer process, since the application only needs one window, and does not require any web-based background tasks.
 
 - An AWS Lambda triggered via  AWS API Gateway, which runs on Amazon's servers. The Lambda computes the assignment by using the [python-constraint](https://github.com/python-constraint/python-constraint) module, specifically the `MinConflictsSolver` class. Another way to use the python-constraint library from inside Electron would be with the Node.js [child_process](https://nodejs.org/api/child_process.html) module, starting either:
     - `python3 my_script.py` (would have to embed a python interpreter)
@@ -97,8 +98,7 @@ To setup the boilerplate for the Electron application, I followed instructions f
 
 That blog describes how to modify source code for a web application in order to use it in an Electron desktop application. The blog mainly helped me to:
 - Add code (`electron-app/public/electron.js`) which implements the Electron main process.
-
-- Add code (`electron-app/public/preload.js`) which specifies  how the Electron main process can communicate with the renderer process. This is described as an optional step in the blog, but has become a mandatory step since the blog's publication due to stricter security enforcement in the new Electron version.
+- Add code (`electron-app/public/preload.js`) which specifies how the Electron main process can communicate with the renderer process. This is described as an optional step in the blog, but has become a mandatory step since the blog's publication due to security policies in the new Electron version.
 - Run and package the Electron app by installing the necessary packages and updating the `electron-app/package.json`.
 
 Besides spawning the renderer process, the main process handles:
