@@ -1,26 +1,33 @@
 # About
 
-This repository contains the source code for an Electron application (located in the `electron-app` folder) and an associated API (located in the `python-assigner` folder) that the Electron application calls. The goal of this software is to allow its user to generate an assignment of workers to tasks.
+The goal of this software is to allow an amusement park manager to generate daily inspection schedules. Each day before amusement park rides open to the public, each ride must be checked by a qualified mechanic. To generate a daily inspection schedule, the amusement park manager must enter the following:
+- How much time is there before the amusement park opens to the public?
+- How much time does each ride take to check?
+- Which mechanics are available and what rides are they qualified to check?
+
+The amusement park manager enters the necessary information to generate inspection schedules into editable tables, then inspection schedules are made available to the amusement park manager to download as a CSV file.
+
+The software is a desktop application developed with Electron and React, and is currently only available for Windows.
 
 ### Constraint satisfaction problem
 
-The point of all this software is to provide inputs to a [constraint satisfaction problem (CSP)](https://en.wikipedia.org/wiki/Constraint_satisfaction_problem), a type of mathematical problem. Sudoku and crosswords are types of CSPs. 
+Generating an inspection schedule can be formalized as a [constraint satisfaction problem (CSP)](https://en.wikipedia.org/wiki/Constraint_satisfaction_problem), a type of mathematical problem. Sudoku and crosswords are types of CSPs. 
 
-The problem can be defined by treating each task as a variable that has a discrete domain of workers. For example, the variable "maintaining the converyor belt" has a domain of ["alex", "george", and "kevin"], meaning it can take on one of those values. Then, choose a worker for each task (assign a value to the variable) such that the workers have time to complete all of their assigned tasks. Formally, each worker has a constraint: the total time of all the tasks that they are assigned cannot exceed a certain value.
+The problem can be defined by treating each amusement park ride as a variable that has a discrete domain of workers. For example, the variable "wooden roller coaster" has a domain of ["alex", "julia", and "kevin"], meaning it can be inspected by one of those workers. Then, choose a worker for each ride (assign a value to the variable) such that the workers have time to complete all of their assigned rides. Formally, each worker has a constraint: the total time of all the rides that they are assigned cannot exceed a certain value.
 
-The python-constraint library supports multiple "Solvers": Python classes implementing various solving techniques. The default solver uses backtracking search, but I chose to use the solver that uses [minimum-conflicts hill-climbing](https://en.wikipedia.org/wiki/Min-conflicts_algorithm). This technique is more suitable in my scenario because it provides a random satisfying assignment as opposed to the same assignment each time. The min-conflicts solver works by choosing a random task and assigning a worker to it that minimizes the number of unsatisfied constraints i.e. conflicts. This means that workers are unlikely to be assigned to the same task the next time an assignment is generated, which reduces worker fatigue.
+The [python-constraint library](https://github.com/python-constraint/python-constraint) supports multiple "Solvers": Python classes implementing various solving techniques. The default solver uses backtracking search, but I chose to use the solver that uses [minimum-conflicts hill-climbing](https://en.wikipedia.org/wiki/Min-conflicts_algorithm). This technique is more suitable in my scenario because it provides a random satisfying assignment as opposed to the same assignment each time. The min-conflicts solver works by choosing a random ride and assigning a worker to it that minimizes the number of unsatisfied constraints i.e. conflicts. This means that workers are unlikely to be assigned to the same ride the next time an assignment is generated, which reduces worker fatigue.
 
 For example, suppose we have the following scenario:
-- Clean: takes 12 mins, domain Ashley, Ivan, John
-- Cook: 15 mins, domain John, Ivan
-- Buy: 5 mins, domain Ivan
-- Write: 5 mins, domain Ashley, Ivan, John
+- Wooden: takes 12 mins, domain Ashley, Ivan, John
+- Spinny: 15 mins, domain John, Ivan
+- Ferris: 5 mins, domain Ivan
+- Pirate: 5 mins, domain Ashley, Ivan, John
 
 Max work time is 15 mins.
 
-Using min-conflicts, we start with a random assignment of tasks to one of the workers that can do that task.
+Using min-conflicts, we start with a random assignment of rides to one of the workers that can do that ride.
 
-| Clean | Cook | Buy | Write | 
+| Wooden | Spinny | Ferris | Pirate | 
 | ----- | ---- | --- | ----- | 
 | Ashley | Ivan | Ivan | Ashley |
 
@@ -28,16 +35,16 @@ In this case, there are two conflicts:
 1. Ashley works for 12 + 5 = 17 minutes (17 > 15)
 2. Ivan works for 20 minutes (20 > 15)
 
-Then we choose a random task, for simplicity "cook", and assign it a value that minimizes the number of conflicts. Assigning "cook" to John causes there to only be one conflict:
-1. Ashley works for 17 minutes
+Then we choose a random ride, for simplicity "Spinny", and assign it a value that minimizes the number of conflicts. Assigning "Spinny" to John causes there to only be one conflict:
+1. Ashley works for 17 minutes (17 > 15)
 
-| Clean | Cook | Buy | Write | 
+| Wooden | Spinny | Ferris | Pirate | 
 | ----- | ---- | --- | ----- | 
 | Ashley | John | Ivan | Ashley |
 
-Then we luckily choose another random task, "clean", and assign it to Ivan. Now there are no conflicts because all workers work for max 15 minutes.
+Then we luckily choose another random ride, "Wooden", and assign it to Ivan. Now there are no conflicts because all workers work for max 15 minutes.
 
-| Clean | Cook | Buy | Write | 
+| Wooden | Spinny | Ferris | Pirate | 
 | ----- | ---- | --- | ----- | 
 | Ashley | John | Ivan | Ivan |
 
@@ -45,17 +52,17 @@ You can find the definition and execution of the CSP on lines 62 to 83 of `pytho
 
 ### UI explanation
 
-The software features four tables: three tables that allow the user to modify the worker and task parameters (input tables), and one table displaying task assignments. Instead of just generating one assignment, the software supports generating mutliple assignments for multiple days because this is more convenient to the user.
+The software features four tables: three tables that allow the user to modify the worker and ride parameters (input tables), and one table displaying ride assignments. Instead of just generating one assignment, the software supports generating mutliple assignments for multiple days because this is more convenient to the user.
 
-The first input table allows the user to specify which tasks each worker can perform. 
+The first input table allows the user to specify which rides each worker can perform. 
 
 <img src="screenshots/workers_table.png" alt="Workers table" width="300">.
 
-The second input table allows the editing of task durations. 
+The second input table allows the editing of ride durations. 
 
 <img src="screenshots/rides_table.png" alt="Rides table" width="300">
 
-The third input table allows the editing of the total allotted time for each day, and allows each day to have slight variations between them  with the "closed rides" (rides=tasks) and "absent workers" columns: on a given day, some tasks or some workers might not be available.
+The third input table allows the editing of the total allotted time for each day, and allows each day to have slight variations between them  with the "closed rides" and "absent workers" columns: on a given day, some rides or some workers might not be available.
 
 <img src="screenshots/day_restrictions_table.png" alt="Day restrictions table" width="600">
 
