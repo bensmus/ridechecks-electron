@@ -1,6 +1,6 @@
 # About
 
-The goal of this software is to allow an amusement park manager to generate daily inspection schedules. Each day before amusement park rides open to the public, each ride must be checked by a qualified mechanic. To generate a daily inspection schedule, the amusement park manager must enter the following:
+The goal of this software is to allow an amusement park manager to generate daily inspection schedules, known as ridechecks. Each day before amusement park rides open to the public, each ride must be checked by a qualified mechanic. To generate a daily inspection schedule, the amusement park manager must enter the following:
 - How much time is there before the amusement park opens to the public?
 - How much time does each ride take to check?
 - Which mechanics are available and what rides are they qualified to check?
@@ -8,6 +8,10 @@ The goal of this software is to allow an amusement park manager to generate dail
 The amusement park manager enters the necessary information to generate inspection schedules into editable tables, then inspection schedules are made available to the amusement park manager to download as a CSV file.
 
 The software is a desktop application developed with Electron and React, and is currently only available for Windows.
+
+Here's how ridechecks look in the application:
+
+![ridechecks example](screenshots/ridechecks_example.png)
 
 ### Constraint satisfaction problem
 
