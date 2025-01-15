@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react';
+import { useImmerReducer } from "use-immer";
+
 import EditableTable from './components/EditableTable';
 import InfoMessage from './components/InfoMessage';
+
+import * as select from './appstate/selectors';
+import appStateReducer from './appstate/reducer';
+import defaultAppState from './appstate/default';
+
 import './App.css';
-import * as asu from './appStateUtilities';
 
 // Turn header and rows into a string that can be written to a CSV file.
 function getCsvString(header, rows) {
@@ -131,7 +137,7 @@ function getNextDefault(defaultBase, strings) {
 }
 
 function App() {
-    const [appState, setAppState] = useState(asu.defaultAppState);
+    const [appState, appStateDispatch] = useImmerReducer(appStateReducer, defaultAppState);
     const [appStateLoaded, setAppStateLoaded] = useState(false);
 
     // Write appState to JSON file located in userData folder (OS-dependent).
@@ -155,13 +161,13 @@ function App() {
     // https://stackoverflow.com/questions/66993812/usestate-vs-useeffect-setting-initial-value
     useEffect(() => { // useEffect runs after first render.
         async function loadAppState() {
-            const defaultAppStateString = JSON.stringify(asu.defaultAppState);
+            const defaultAppStateString = JSON.stringify(defaultAppState);
             // If there is no state file to load from, makes the file and stores default state into it.
             const {success, appStateString } = await window.appState.load(defaultAppStateString);
             if (!success) {
                 console.error('cannot load application state')
             }
-            setAppState(JSON.parse(appStateString));
+            appStateDispatch({type: "set-state", payload: JSON.parse(appStateString)});
             setAppStateLoaded(true)
         }
 
@@ -173,19 +179,19 @@ function App() {
     const ridecheckGenSuccess = 'All ridechecks generated successfully';
     const [ridecheckGenMessage, setRidecheckGenMessage] = useState(ridecheckGenSuccess);
     
-    const defaultDay = getNextDefault('Day', asu.getDayrestrictDays(appState));
-    const defaultWorker = getNextDefault('Worker', asu.getWorkers(appState));
-    const defaultRide = getNextDefault('Ride', asu.getRides(appState));
+    const defaultDay = getNextDefault('Day', select.dayrestrictDays(appState));
+    const defaultWorker = getNextDefault('Worker', select.workers(appState));
+    const defaultRide = getNextDefault('Ride', select.rides(appState));
     
-    const workers = asu.getWorkers(appState);
-    const rides = asu.getRides(appState);
+    const workers = select.workers(appState);
+    const rides = select.rides(appState);
     const numRides = rides.length;
-    const rideRows = asu.getRideRows(appState);
-    const workerRows = asu.getWorkerRows(appState);
-    const ridecheckRows = asu.getRidecheckRows(appState);
-    const dayrestrictRows = asu.getDayrestrictRows(appState);
-    const ridecheckHeader = asu.getRidecheckHeader(appState)
-    const ridecheckDays = asu.getRidecheckDays(appState);
+    const rideRows = select.rideRows(appState);
+    const workerRows = select.workerRows(appState);
+    const ridecheckRows = select.ridecheckRows(appState);
+    const dayrestrictRows = select.dayrestrictRows(appState);
+    const ridecheckHeader = select.ridecheckHeader(appState)
+    const ridecheckDays = select.ridecheckDays(appState);
 
     async function handleGenerateRidechecks() {
         setIsGenerating(true);
@@ -195,7 +201,7 @@ function App() {
         if (typeof response === 'string') { // Response is an error message:
             setRidecheckGenMessage(response);
         } else { // Response is ridechecks:
-            asu.setRidechecks(response, setAppState);
+            appStateDispatch({type: "set-ridechecks", payload: response})
             setRidecheckGenMessage(ridecheckGenSuccess);
         }
     }
@@ -244,7 +250,7 @@ function App() {
             <EditableTable
                 mutableRowCount={true}
                 rows={dayrestrictRows}
-                setRows={(newRows) => {asu.setDayrestrictRows(newRows, setAppState)}}
+                setRows={(newRows) => {appStateDispatch({type: 'set-dayrestrict', payload: newRows})}}
                 header={['Day', 'Time till opening (mins)', 'Absent workers', 'Closed rides']}
                 inputTypes={['text', 'number', 'subset', 'subset']}
                 defaultRow={[defaultDay, 100, { allset: workers, subset: [] }, { allset: rides, subset: [] }]}
@@ -264,7 +270,7 @@ function App() {
             <EditableTable
                 mutableRowCount={true}
                 rows={workerRows}
-                setRows={(newRows) => {asu.setWorkerRows(newRows, setAppState)}}
+                setRows={(newRows) => {appStateDispatch({type: 'set-workers', payload: newRows})}}
                 header={['Worker'].concat(rides)}
                 inputTypes={['text'].concat(Array(numRides).fill('checkbox'))}
                 defaultRow={[defaultWorker].concat(Array(numRides).fill(false))}
@@ -283,7 +289,7 @@ function App() {
             <EditableTable
                 mutableRowCount={true}
                 rows={rideRows}
-                setRows={(newRows) => {asu.setRideRows(newRows, setAppState)}}
+                setRows={(newRows) => {appStateDispatch({type: 'set-rides', payload: newRows})}}
                 header={['Ride', 'Time to check (mins)']}
                 inputTypes={['text', 'number']}
                 defaultRow={[defaultRide, 10]}
