@@ -1,7 +1,6 @@
 import { rides as selectRides} from './selectors'
 
 export default function reducer(draft, action) {
-    // eslint-disable-next-line default-case
     switch (action.type) {
         case "set-state":
             return action.payload;
@@ -23,20 +22,27 @@ export default function reducer(draft, action) {
             const rides = selectRides(draft);
             const workerObjs = workerObjsFromRows(rides, action.payload);
             draft.workers = workerObjs;
-            const workerOk = (worker) => workerObjs.some(workerObj => workerObj.worker === worker)
+            const workerNames = new Set(workerObjs.map(workerObj => workerObj.worker));
+            // Update dayrestrict.absentWorkers array,
+            // ensure that it contains only workers that actually exist.
             for (const obj of draft.dayrestrict) {
-                obj.absentWorkers = obj.absentWorkers.filter(workerOk)
+                obj.absentWorkers = obj.absentWorkers.filter(workerName => workerNames.has(workerName));
             }
             break;
         case "set-rides":
             draft.rides = action.payload.map(([ride, time]) => ({ride, time}));
-            const rideOk = (ride) => draft.rides.some(rideObj => rideObj.ride === ride);
+            const rideNames = new Set(draft.rides.map(rideObj => rideObj.ride));
+            // Update worker.canCheck array and dayrestrict.closedRides array,
+            // ensure that they contain only rides that actually exist.
             for (const obj of draft.workers) {
-                obj.canCheck = obj.canCheck.filter(rideOk);
+                obj.canCheck = obj.canCheck.filter(rideName => rideNames.has(rideName));
             }
             for (const obj of draft.dayrestrict) {
-                obj.closedRides = obj.closedRides.filter(rideOk);
+                obj.closedRides = obj.closedRides.filter(rideName => rideNames.has(rideName));
             }
+            break;
+        default:
+            throw new Error(`Invalid action type: ${action.type}`);
     }
 }
 

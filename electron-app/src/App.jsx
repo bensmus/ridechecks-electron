@@ -6,7 +6,7 @@ import InfoMessage from './components/InfoMessage';
 
 import * as select from './appstate/selectors';
 import appStateReducer from './appstate/reducer';
-import defaultAppState from './appstate/default';
+import defaultAppState from './appstate/defaultstate';
 
 import './App.css';
 
