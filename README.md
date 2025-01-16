@@ -11,7 +11,7 @@ The software is a desktop application developed with Electron and React, and is 
 
 Here's how ridechecks look in the application:
 
-![ridechecks example](screenshots/ridechecks_example.png)
+<img src="screenshots/ridechecks_example.png" alt="Ridechecks example" width="600">.
 
 ### Constraint satisfaction problem
 
@@ -78,32 +78,38 @@ Here's the assignments that the software generates based on the specific informa
 
 # Technical information
 
-![Software architecture diagram](screenshots/diagram.png)
+<img src="screenshots/overview_diagram.png" alt="Overview diagram" width="700">
 
-(Diagram made using https://excalidraw.com/)
-
-Each user has their own instance of the Electron application, with their own `state.json` file for the Electron application's state, and all users access the same API.
+(Diagrams made using https://excalidraw.com/)
 
 Here are the main events that the software responds to:
-1. When it loads: read the state from the `state.json` file. 
-2. When user edits table in the UI: Modify the app state.
+1. When it loads: read the state from the `state.json` file. When user edits table in the UI: Modify the app state and write to `state.json` file.
 2. When user clicks "regenerate" button: App makes API call, a POST request with the JSON app state in the body, and the lambda function returns a JSON response, with either an error string or the assignments.
 3. When user clicks "save" button: App opens OS save dialog, allowing the user to save the assignments locally as a CSV file in case they want to edit them in a spreadsheet application or just for recordkeeping.
 
-### Technology stack
+Technology stack overview:
+- The Electron application, which runs locally on the user's computer. All Electron applications run as at least two processes that communicate with each another. The [Electron docs explain how it works](https://www.electronjs.org/docs/latest/tutorial/process-model). My Electron app has just one renderer process, which is a React SPA, and the main process is responsible for file tasks (`state.json`, `output.csv`), which the renderer process does not have permission to perform.
+- An AWS Lambda triggered via  AWS API Gateway, which runs on Amazon's servers. The Lambda computes the assignment by using the [python-constraint](https://github.com/python-constraint/python-constraint) module, specifically the `MinConflictsSolver` class. 
 
-The stack:
-- The Electron application, which runs locally on the user's computer. All Electron applications run as at least two processes that communicate with each another: 
-    - One main process, which has access to operating system features such as saving files to the filesystem. This process is interpreted by Node.js. 
-    - At least one renderer process, which is spawned by the main process. I'm oversimplifying, but this renderer process has a mini-browser inside of it, and it understands JavaScript/HTML/CSS for browsers. In my case, I'm developing code for the renderer process using React. My main process only spawns one renderer process, since the application only needs one window, and does not require any web-based background tasks.
+Each user has their own instance of the Electron application, with their own `state.json` file for the Electron application's state, and all users access the same API.
 
-- An AWS Lambda triggered via  AWS API Gateway, which runs on Amazon's servers. The Lambda computes the assignment by using the [python-constraint](https://github.com/python-constraint/python-constraint) module, specifically the `MinConflictsSolver` class. Another way to use the python-constraint library from inside Electron would be with the Node.js [child_process](https://nodejs.org/api/child_process.html) module, starting either:
-    - `python3 my_script.py` (would have to embed a python interpreter)
-    - `executable_from_script` (generated via pyinstaller or similar) 
+In the Electron app React UI, table components extract data from the global state and update it:
 
-    as a child process.
+<img src="screenshots/state_diagram.png" alt="App state diagram" width="450">
 
-### Electron application 
+The `electron-app/src/appstate` folder contains the reducer in `reducer.js` and select rows functions in `selectors.js` referenced in the above diagram.
+
+The tables components are instances of `EditableTable` in `electron-app/src/components/EditableTable.jsx`. 
+
+EditableTable components read row data and dispatch actions: 
+1. Prop for row data: Some part of the application state is selected and transformed to a 2D array. 
+2. Prop for dispatching action: A callback function that dispatches action, causing the app state to be modified. 
+
+The global app state is initialized in `electron-app/src/App.jsx` as `const [appState, appStateDispatch] = useImmerReducer(appStateReducer, defaultAppState);` using the [use-immer library](https://github.com/immerjs/use-immer)), based on https://react.dev/learn/extracting-state-logic-into-a-reducer.
+
+The state was chosen to be easily serializable to JSON. I originaly had a simpler state which didn't allow duplicate ride or worker names: there were no ride objects or worker objects in an array, just name keys to `time` or `canCheck` values. That caused issues with worker names that were substrings of other worker names, for example Alex and Alexa, since an object cannot have duplicate keys.
+
+### Credit to Electron tutorial from Matteo Mazzarolo
 
 To setup the boilerplate for the Electron application, I followed instructions from https://mmazzarolo.com/blog/2021-08-12-building-an-electron-application-using-create-react-app/. 
 
@@ -111,45 +117,3 @@ That blog describes how to modify source code for a web application in order to 
 - Add code (`electron-app/public/electron.js`) which implements the Electron main process.
 - Add code (`electron-app/public/preload.js`) which specifies how the Electron main process can communicate with the renderer process. This is described as an optional step in the blog, but has become a mandatory step since the blog's publication due to security policies in the new Electron version.
 - Run and package the Electron app by installing the necessary packages and updating the `electron-app/package.json`.
-
-Besides spawning the renderer process, the main process handles:
-- Reading/writing from state.json file.
-- Save dialog for saving the assignments as a CSV.
-
-These tasks are OS-related and the renderer process does not have permission to perform these tasks. They have to be implemented in the main process.
-
-### How the user interface works
-
-The UI is implemented in React. React is a component-based framework where each component can have a state. The following section assumes some knowledge of React.
-
-My design has one App component with the app state. This component contains all of the information that is saved into the `state.json` file. The App component has four EditableTable components as children, which read and write to the app state (always modified set using `setAppState`). The way that the EditableTable components read and write to the app state is via two props: 
-1. Prop for reading application state: Some part of the application state is passed as a prop. 
-2. Prop for writing to application state: A callback function that calls `setAppState` in a particular way. 
-
-When one of the EditableTable components updates the app state, this potentially rerenders its sibling EditableTable components, keeping them in sync.
-
-Here's how it works:
-1. "EditableTable A" calls its callback prop and update App's state.
-2. This triggers App to rerender. 
-3. During App's rerender, the prop for reading application state passed to the siblings of "EditableTable A" may be changed.
-4. If the sibling's prop was changed, it rerenders.
-
-### Design of app state
-
-`electron-app/src/appStateUtilities.js` specifies the default state object and provides functions for updating it. The state always has:
-- Rides array, containing Ride objects. Each ride object has
-    - Name (strings)
-    - Time (number)
-- Workers array, containing Worker objects. Each worker object has
-    - Name (string)
-    - CanCheck (list of ride names, which are strings)
-- Day restrictions array, containing DayRestriction objects. Each has
-    - Day (string, the name of the day)
-    - Time (number, how long the workers have to complete their tasks on that day)
-    - ClosedRides (list of ride names, which are strings)
-    - AbsentWorkers (list of worker names, which are strings)
-- Ridechecks array, containing Ridecheck objects. Each has
-    - Day (string, the name of the day)
-    - A ridecheck object, which is used as a map from ride to worker names.
-
-The state was chosen to be easily serializable to JSON. I originaly had a simpler state which didn't allow duplicate ride or worker names: there were no ride objects or worker objects in an array, just name keys to Time or CanCheck values. That caused issues with worker names that were substrings of other worker names, for example Alex and Alexa, since an object cannot have duplicate keys.
